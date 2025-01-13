@@ -1,0 +1,26 @@
+{
+    "id": "03AABF37",
+    "path": "D:/GitHub/LDG_climate_state/R/00_data_preparation.R",
+    "project_path": "R/00_data_preparation.R",
+    "type": "r_source",
+    "hash": "2415418452",
+    "contents": "",
+    "dirty": false,
+    "created": 1732709604339.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "0,8",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1732709611,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1732709611992,
+    "read_only": false,
+    "read_only_alternatives": []
+}
