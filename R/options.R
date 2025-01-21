@@ -9,13 +9,17 @@ required_packages <- c("httr",
                        "tidyr", 
                        "stringr", 
                        "iNEXT",
-                       "ggplot2")
+                       "ggplot2",
+                       "pbapply",
+                       "parallel")
 invisible(lapply(required_packages, 
                  function(pkg) if (!requireNamespace(pkg, quietly = TRUE)) 
                    install.packages(pkg)))
 
 # Load libraries
 invisible(lapply(required_packages, library, character.only = TRUE))
+
+data_clean <- readRDS("data/data_clean.rds")
 
 # Source functions
 source('./R/functions/buffer_subsampling.R')
@@ -61,12 +65,15 @@ selected_columns <- c("occurrence_no",
 # 1.1 LDG calculation
 # Parameters
 xy = c("paleolat2", "paleolng2") # Columns representing geographic coordinates (latitude and longitude)
-iter = 1                         # Number of iterations for buffering process
-nSite = 40                       # Number of sites to sample within each buffer
-r = 1500                         # Buffer radius in kilometers
+nSite = 1                        # Number of sites to sample within each buffer
+r = 200                          # Buffer radius in kilometers
 crs = 'epsg:4326'                # Coordinate reference system, default is WGS84
 q = c(0)                         # Diversity order(s) to calculate; 0 for species richness
 datatype = "incidence_freq"      # Data type; 'incidence_freq' for presence-absence data aggregated into frequencies
 base = "coverage"                # Standardization base; 'coverage' ensures comparisons at the same coverage level
 level = 0.7                      # Desired sample coverage level (e.g., 0.7 = 70% of species expected to be detected)
-nboot = 0                        # Number of bootstrap replicates for confidence intervals; 0 means no bootstrapping
+nboot = 50                        # Number of bootstrap replicates for confidence intervals; 0 means no bootstrapping
+stage_name = NULL 
+stage_mid = NULL
+stbin = NULL
+source("./R/01_LDG_calculation.R")

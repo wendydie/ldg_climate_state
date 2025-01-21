@@ -66,11 +66,6 @@ findSeeds <- function(dat, siteId, xy, r, nSite, crs = 'epsg:4326'
 #'        Example:
 #'        xy <- c("lat", "lng")
 #'
-#' @param iter Integer specifying the number of iterations for the buffer 
-#'        process. Each iteration randomly selects points within each buffer.
-#'        Example:
-#'        iter <- 5
-#'
 #' @param nSite Integer specifying the number of sites (points) to sample 
 #'        within each buffer. This determines how many points are included 
 #'        in each buffer subsample.
@@ -107,9 +102,9 @@ findSeeds <- function(dat, siteId, xy, r, nSite, crs = 'epsg:4326'
 #' r <- 200  # Buffer radius in km
 #' nSite <- 5
 #' iter <- 3
-#' buffers(dat, xy, iter, nSite, r, output = 'incidence_freq')
+#' buffers(dat, xy, nSite, r, output = 'incidence_freq')
 #'
-buffers <- function(dat, xy, iter, nSite, r,
+buffers <- function(dat, xy, nSite, r,
                     crs = 'epsg:4326', output = 'incidence_freq') {
   
   # Ensure unique coordinates for processing and add IDs for each site
@@ -119,78 +114,98 @@ buffers <- function(dat, xy, iter, nSite, r,
   # Generate spatial buffers for subsampling; this is computationally intensive
   allPools <- findSeeds(coords, 'id', xy, r, nSite, crs)
   if (length(allPools) < 1) {
-    stop('Not enough close sites for any subsample.')
+    # stop('Not enough close sites for any subsample.')
+    warning('Not enough close sites for any subsample.')
+    return(NULL)  # Skip to the next iteration of the loop
   }
   
-  # Subsampling function to process within buffered radius
-  buffer <- function() {
-    seeds <- names(allPools)
-    if (output == 'incidence_freq') {
-      # Generate incidence frequency matrix from buffered data
-      incfreq_inbuffers <- lapply(seeds, function(seed) {
-        # Retrieve buffered points
-        pool <- allPools[seed][[1]]
-        samplIds <- sample(sample(pool), nSite, replace = FALSE)
-        
-        # Match sampled points to original data
-        coordRows <- match(samplIds, coords$id)
-        coordLocs <- coords[coordRows, xy]
-        x <- xy[1]
-        y <- xy[2]
-        sampPtStrg <- paste(coordLocs[, x], coordLocs[, y], sep = '/')
-        datPtStrg <- paste(dat[, x], dat[, y], sep = '/')
-        inSamp <- match(datPtStrg, sampPtStrg)
-        dat_inbuffer <- dat[!is.na(inSamp), ]
-        
-        # Extract seed coordinates
-        seed_coord <- coords[coords$id == seed, xy]
-        seed_lat <- seed_coord[[xy[1]]]
-        seed_lng <- seed_coord[[xy[2]]]
-        
-        # Generate incidence frequency
-        incfreq_inbuffer <- incfreq(dat_inbuffer)
-        seed_name <- paste0(seed_lat, "_", seed_lng)
-        names(incfreq_inbuffer) <- seed_name
-        return(incfreq_inbuffer)
-      })
+  seeds <- names(allPools)
+  if (output == 'incidence_freq') {
+    # Generate incidence frequency matrix from buffered data
+    incfreq_inbuffers <- lapply(seeds, function(seed) {
+      # Retrieve buffered points
+      pool <- allPools[seed][[1]]
+      # samplIds <- sample(sample(pool), nSite, replace = FALSE)
+      samplIds <- pool
       
-      # Combine all incidence frequencies into a single matrix
-      out <- do.call(c, incfreq_inbuffers)
+      # Match sampled points to original data
+      coordRows <- match(samplIds, coords$id)
+      coordLocs <- coords[coordRows, xy]
+      x <- xy[1]
+      y <- xy[2]
+      sampPtStrg <- paste(coordLocs[, x], coordLocs[, y], sep = '/')
+      datPtStrg <- paste(dat[, x], dat[, y], sep = '/')
+      inSamp <- match(datPtStrg, sampPtStrg)
+      dat_inbuffer <- dat[!is.na(inSamp), ]
       
-    } else if (output == 'full') {
-      # Return full data for each buffer
-      dat_inbuffers <- lapply(seeds, function(seed) {
-        # Retrieve buffered points
-        pool <- allPools[seed][[1]]
-        samplIds <- sample(pool, nSite, replace = FALSE)
-        
-        # Match sampled points to original data
-        coordRows <- match(samplIds, coords$id)
-        coordLocs <- coords[coordRows, xy]
-        x <- xy[1]
-        y <- xy[2]
-        sampPtStrg <- paste(coordLocs[, x], coordLocs[, y], sep = '/')
-        datPtStrg <- paste(dat[, x], dat[, y], sep = '/')
-        inSamp <- match(datPtStrg, sampPtStrg)
-        dat_inbuffer <- dat[!is.na(inSamp), ]
-        
-        # Add buffer metadata
-        seed_coord <- coords[coords$id == seed, xy]
-        seed_lat <- seed_coord[[xy[1]]]
-        seed_lng <- seed_coord[[xy[2]]]
-        buffer_no <- paste0(seed_lat, "_", seed_lng)
-        dat_inbuffer['buffer_no'] <- buffer_no
-        
-        return(dat_inbuffer)
-      })
+      # Extract seed coordinates
+      seed_coord <- coords[coords$id == seed, xy]
+      seed_lat <- seed_coord[[xy[1]]]
+      seed_lng <- seed_coord[[xy[2]]]
       
-      # Combine all buffered data into a single data frame
-      out <- do.call(rbind, dat_inbuffers)
-    }
+      # Generate incidence frequency
+      incfreq_inbuffer <- incfreq(dat_inbuffer)
+      seed_name <- paste0(seed_lat, "_", seed_lng)
+      names(incfreq_inbuffer) <- seed_name
+      return(incfreq_inbuffer)
+    })
     
-    return(out)
+    # Combine all incidence frequencies into a single matrix
+    out <- do.call(c, incfreq_inbuffers)
+    
+  } else if (output == 'full') {
+    # Return full data for each buffer
+    dat_inbuffers <- lapply(seeds, function(seed) {
+      # Retrieve buffered points
+      pool <- allPools[seed][[1]]
+      # samplIds <- sample(sample(pool), nSite, replace = FALSE)
+      samplIds <- pool
+      
+      # Match sampled points to original data
+      coordRows <- match(samplIds, coords$id)
+      coordLocs <- coords[coordRows, xy]
+      x <- xy[1]
+      y <- xy[2]
+      sampPtStrg <- paste(coordLocs[, x], coordLocs[, y], sep = '/')
+      datPtStrg <- paste(dat[, x], dat[, y], sep = '/')
+      inSamp <- match(datPtStrg, sampPtStrg)
+      dat_inbuffer <- dat[!is.na(inSamp), ]
+      
+      # Add buffer metadata
+      seed_coord <- coords[coords$id == seed, xy]
+      seed_lat <- seed_coord[[xy[1]]]
+      seed_lng <- seed_coord[[xy[2]]]
+      buffer_no <- paste0(seed_lat, "_", seed_lng)
+      dat_inbuffer['buffer_no'] <- buffer_no
+      
+      return(dat_inbuffer)
+    })
+    
+    # Combine all buffered data into a single data frame
+    out <- do.call(rbind, dat_inbuffers)
+  } else if (output == 'locs'){
+    locs_inbuffers <- lapply(seeds, function(seed) {
+      # Retrieve buffered points
+      pool <- allPools[seed][[1]]
+      # samplIds <- sample(sample(pool), nSite, replace = FALSE)
+      samplIds <- pool
+      
+      # Match sampled points to original data
+      coordRows <- match(samplIds, coords$id)
+      coordLocs <- coords[coordRows, xy]
+      x <- xy[1]
+      y <- xy[2]
+      # Add buffer metadata
+      seed_coord <- coords[coords$id == seed, xy]
+      seed_lat <- seed_coord[[xy[1]]]
+      seed_lng <- seed_coord[[xy[2]]]
+      buffer_no <- paste0(seed_lat, "_", seed_lng)
+      coordLocs['buffer_no'] <- buffer_no
+      return(coordLocs)
+    })
+    # Combine all buffered data into a single data frame
+    out <- do.call(rbind, locs_inbuffers)
   }
   
-  # Run the buffer process for the specified number of iterations
-  replicate(iter, buffer(), simplify = FALSE)
+  return(out)
 }

@@ -1,12 +1,14 @@
 
-incefreq2 <- buffers(dat, xy, iter=50, nSite=10, r=1500,
+dat <- dat_list[[90]]
+incefreq2 <- buffers(dat, xy, nSite=1, r=150,
                      crs = 'epsg:4326', output = 'incidence_freq')
 
+locs_inbuffer <- buffers(dat, xy, nSite = nSite, r = r, crs = crs, output = 'locs')
 # Compute richness for each buffer using iNEXT::estimateD
 # lapply is used to iterate over each buffer in incefreq2
 richness_list <- lapply(incefreq2, function(buffer) {
   iNEXT::estimateD(x = buffer, q = c(0), datatype = "incidence_freq", 
-                   base = "coverage", level = 0.7, nboot = 0)
+                   base = "coverage", level = 0.7, nboot = 50)
 })
 
 # Combine the richness results from all iterations into a single data frame

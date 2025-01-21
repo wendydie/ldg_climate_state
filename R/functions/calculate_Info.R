@@ -46,7 +46,7 @@ count_occ_col_refs <- function(dat) {
 
 
 #function 4.
-compute_richness_summary <- function(dat, xy, iter = 50, nSite = 10, r = 1500, 
+compute_richness_summary <- function(dat, xy, nSite = 10, r = 1500, 
                                      crs = 'epsg:4326', q = c(0), 
                                      datatype = "incidence_freq", 
                                      base = "coverage", level = 0.7, nboot = 0,
@@ -75,86 +75,44 @@ compute_richness_summary <- function(dat, xy, iter = 50, nSite = 10, r = 1500,
   }
   
   # Step 2: Generate incidence frequencies using buffers
-  incfreq <- buffers(dat, xy, iter = iter, nSite = nSite, r = r, crs = crs, 
-                     output = 'incidence_freq')
+  tryCatch({
+    inc_freq <- buffers(dat, xy, nSite = nSite, r = r, crs = crs, output = 'incidence_freq')
+  }, error = function(e) {
+    message("Error: ", e$message)
+    message("Check buffer radius (r) and minimum site count (nSite). Try increasing r or reducing nSite.")
+    return(NULL)
+  })
+  if (is.null(inc_freq)) return(NULL) # Skip further processing if buffers fail
   
   # Step 3: Compute richness metrics for each buffer using iNEXT::estimateD
-  rich_list <- lapply(incfreq, function(buf) {
-    iNEXT::estimateD(x = buf, q = q, datatype = datatype, 
+  combined_rich <- iNEXT::estimateD(x = inc_freq, q = q, datatype = datatype, 
                      base = base, level = level, nboot = nboot)
-  })
-  
-  # Combine richness results across all iterations
-  combined_rich <- do.call(rbind, lapply(seq_along(rich_list), function(i) {
-    rich_list[[i]] %>% mutate(iter = i) # Add iteration ID
-  }))
   
   # Add stage information to combined_rich
   combined_rich <- combined_rich %>%
     mutate(stage_name = stage_name, stage_mid = stage_mid, stbin = stbin)
   
   # Step 4: Apply Fun.ince to all buffers
-  fun_results <- lapply(incfreq, function(iter) {
-    lapply(names(iter), function(assem) {
-      res <- Fun.ince(iter[[assem]])
-      c(assem = assem, res) # Add Assemblage name
-    })
+  fun_results <- lapply(inc_freq, function(buf) {
+    Fun.ince(buf)
   })
   
   # Combine results across all iterations into a single data frame
-  rich_df <- do.call(rbind, lapply(seq_along(fun_results), function(i) {
-    iter_res <- do.call(rbind, fun_results[[i]])
-    cbind(iter = i, iter_res) # Add iteration ID
-  }))
+  rich_info_df <- do.call(rbind, fun_results)
   
   # Convert to data frame and ensure numeric columns
-  rich_df <- as.data.frame(rich_df)
-  colnames(rich_df) <- c("Iteration", "assem", "nT", "n_occ",
-                                 "Sobs", "Chat", "Good.u", "m.rate",
-                                 paste0("Q", 1:10))
+  rich_info_df <- as.data.frame(rich_info_df)
+  colnames(rich_info_df) <- c("nT", "n_occ",
+                         "Sobs", "Chat", "Good.u", "m.rate",
+                         paste0("Q", 1:10))
+  rich_info_df$assem <- rownames(rich_info_df)
   numeric_cols <- c("nT", "n_occ", "Sobs", "Chat", "Good.u", "m.rate", paste0("Q", 1:10))
-  rich_df[numeric_cols] <- lapply(rich_df[numeric_cols], as.numeric)
+  rich_info_df[numeric_cols] <- lapply(rich_info_df[numeric_cols], as.numeric)
   
   # Add stage information to rich_df
-  rich_df <- rich_df %>%
+  rich_info_df <- rich_info_df %>%
     mutate(stage_name = stage_name, stage_mid = stage_mid, stbin = stbin)
-  
-  # Step 5: Summarize results by Assemblage across iterations
-  rich_info_summary <- rich_df %>%
-    group_by(assem) %>%
-    summarise(
-      mean_nT = mean(nT, na.rm = TRUE),
-      ci_nT_lower = mean(nT, na.rm = TRUE) - 1.96 * sd(nT, na.rm = TRUE) / sqrt(sum(!is.na(nT))),
-      ci_nT_upper = mean(nT, na.rm = TRUE) + 1.96 * sd(nT, na.rm = TRUE) / sqrt(sum(!is.na(nT))),
-      
-      mean_n_occ = mean(n_occ, na.rm = TRUE),
-      ci_n_occ_lower = mean(n_occ, na.rm = TRUE) - 1.96 * sd(n_occ, na.rm = TRUE) / sqrt(sum(!is.na(n_occ))),
-      ci_n_occ_upper = mean(n_occ, na.rm = TRUE) + 1.96 * sd(n_occ, na.rm = TRUE) / sqrt(sum(!is.na(n_occ))),
-      
-      mean_Sobs = mean(Sobs, na.rm = TRUE),
-      ci_Sobs_lower = mean(Sobs, na.rm = TRUE) - 1.96 * sd(Sobs, na.rm = TRUE) / sqrt(sum(!is.na(Sobs))),
-      ci_Sobs_upper = mean(Sobs, na.rm = TRUE) + 1.96 * sd(Sobs, na.rm = TRUE) / sqrt(sum(!is.na(Sobs))),
-      
-      mean_Chat = mean(Chat, na.rm = TRUE),
-      ci_Chat_lower = mean(Chat, na.rm = TRUE) - 1.96 * sd(Chat, na.rm = TRUE) / sqrt(sum(!is.na(Chat))),
-      ci_Chat_upper = mean(Chat, na.rm = TRUE) + 1.96 * sd(Chat, na.rm = TRUE) / sqrt(sum(!is.na(Chat))),
-      
-      mean_Good_u = mean(Good.u, na.rm = TRUE),
-      ci_Good_u_lower = mean(Good.u, na.rm = TRUE) - 1.96 * sd(Good.u, na.rm = TRUE) / sqrt(sum(!is.na(Good.u))),
-      ci_Good_u_upper = mean(Good.u, na.rm = TRUE) + 1.96 * sd(Good.u, na.rm = TRUE) / sqrt(sum(!is.na(Good.u))),
-      
-      mean_m_rate = mean(m.rate, na.rm = TRUE),
-      ci_m_rate_lower = mean(m.rate, na.rm = TRUE) - 1.96 * sd(m.rate, na.rm = TRUE) / sqrt(sum(!is.na(m.rate))),
-      ci_m_rate_upper = mean(m.rate, na.rm = TRUE) + 1.96 * sd(m.rate, na.rm = TRUE) / sqrt(sum(!is.na(m.rate))),
-      
-      across(starts_with("Q"), list(
-        mean = ~ mean(., na.rm = TRUE),
-        ci_lower = ~ mean(., na.rm = TRUE) - 1.96 * sd(., na.rm = TRUE) / sqrt(sum(!is.na(.))),
-        ci_upper = ~ mean(., na.rm = TRUE) + 1.96 * sd(., na.rm = TRUE) / sqrt(sum(!is.na(.)))
-      ), .names = "{.col}_{.fn}")
-    ) %>%
-    mutate(stage_name = stage_name, stage_mid = stage_mid, stbin = stbin)
-  
+
   # Return combined richness results and the summary
-  list(combined_rich = combined_rich, rich_info_summary = rich_info_summary)
+  list(combined_rich = combined_rich, rich_info_df = rich_info_df)
 }
