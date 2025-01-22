@@ -1,89 +1,156 @@
-# 0.1 data downloading from PBDB
-url <- modify_url(base_url, query = query)
-response <- GET(url)
-content_raw <- content(response, "text")
-data <- read.csv(text = content_raw, skip = 21, header=TRUE)
+# Header ----------------------------------------------------------------
+# Project: LDG_climate_state
+# File name: 00_data_preparation.R
+# Last updated: 2025-01-21
+# Author: Lewis A. Jones; Die (Wendy) Wen
+# Email: lewis.jones@ucl.ac.uk; die.wen@ucl.ac.uk
+# Repository: https://github.com/wendydie/LDG_climate_state
+# -----------------------------------------------------------------------
+# Load libraries and options --------------------------------------------
+library(palaeoverse)
+library(dplyr)
+source("./R/options.R")
 
-# 0.2 data cleaning                      "lat", "lng", "max_ma", "min_ma", "early_interval", "late_interval",
-data_clean <- data %>%
-  select(all_of(selected_columns))%>%
-  filter(!is.na(occurrence_no), !is.na(reference_no), !is.na(collection_no),
-         !is.na(genus), 
-         !is.na(lat), !is.na(lng), 
-         !is.na(max_ma),!is.na(min_ma),
-         lat != "",lng != "",genus != "",max_ma != "",min_ma != ""
-         )
+# Data downloading from PBDB --------------------------------------------
+if (params$download || !file.exists("./data/raw/pbdb_data.RDS")) {
+  # Use for fresh downloads
+  library(RCurl)
+  library(httr)
+  RCurl::curlSetOpt(3000)
+  # Read data 
+  url <- httr::modify_url(url = params$base_url, query = params$query)
+  occdf <- RCurl::getURL(url = url, ssl.verifypeer = FALSE)
+  occdf <- read.csv(textConnection(occdf))
+  # Save raw data (do not modify to ensure complete reproducibility)
+  saveRDS(occdf, "./data/raw/pbdb_data.RDS")
+} else {
+  # Read data
+  occdf <- readRDS("./data/raw/pbdb_data.RDS")
+}
 
-# Add a column to flag uncertain records
-data_clean <- data_clean %>%
-  mutate(is_uncertain = str_detect(genus, "\\s(sp\\.|cf\\.|aff\\.|indet|nov\\.sp\\.|s\\.l\\.|s\\.s\\.|morphotype.*)"))
+# Set up time bins -----------------------------------------------------
+bins <- time_bins(interval = "Phanerozoic",
+                  rank = params$rank,
+                  scale = params$GTS)
+# Collapse Holocene equivalent bins
+vec <- which(bins$interval_name == "Greenlandian")
+bins$interval_name[vec] <- "Holocene"
+bins$abbr[vec] <- "H"
+# Update min_ma
+bins$min_ma[vec] <- 0.0000
+# Update mid_ma
+bins$mid_ma[vec] <- (bins$min_ma[vec] + bins$max_ma[vec]) / 2
+# Update duration
+bins$duration_myr[vec] <- (bins$max_ma[vec] - bins$min_ma[vec])
+# Drop rows
+bins <- bins[-which(bins$interval_name %in% c("Meghalayan", "Northgrippian")), ]
+# Collapse Pleistocene equivalent bins
+# Drop bins
+pleis <- c("Late Pleistocene", "Chibanian", "Calabrian")
+bins <- bins[-which(bins$interval_name %in% pleis), ]
+# update Gelasian to be all of the Pleistocene
+vec <- which(bins$interval_name == "Gelasian")
+bins$interval_name[vec] <- "Pleistocene"
+# Update min_ma
+bins$min_ma[vec] <- bins[which(bins$interval_name == "Holocene"), "max_ma"]
+# Update mid_ma
+bins$mid_ma[vec] <- (bins$min_ma[vec] + bins$max_ma[vec]) / 2
+# Update duration
+bins$duration_myr[vec] <- (bins$max_ma[vec] - bins$min_ma[vec])
+# Update bin numbers
+bins$bin <- 1:nrow(bins)
+row.names(bins) <- 1:nrow(bins)
+# Save time bins
+saveRDS(object = bins, file = "./data/time_bins.RDS")
 
-# Filter data based on certainty (optional)
-data_clean <- data_clean %>%
-  filter(!is_uncertain) # Remove uncertain records if not needed
+# Data cleaning and processing -----------------------------------------
+# Clean up age assignments
+# Remove any regular prefixes (Early, Middle, Late)
+occdf$early_interval <- gsub(pattern = "Early ",
+                             replacement = "",
+                             x = occdf$early_interval)
+occdf$late_interval <- gsub(pattern = "Early ",
+                            replacement = "",
+                            x = occdf$late_interval)
+occdf$early_interval <- gsub(pattern = "Middle ",
+                             replacement = "",
+                             x = occdf$early_interval)
+occdf$late_interval <- gsub(pattern = "Middle ",
+                            replacement = "",
+                            x = occdf$late_interval)
+occdf$early_interval <- gsub(pattern = "Late ",
+                             replacement = "",
+                             x = occdf$early_interval)
+occdf$late_interval <- gsub(pattern = "Late ",
+                            replacement = "",
+                            x = occdf$late_interval)
+
+# Add required columns for look_up()
+bins$early_stage <- bins$interval_name
+bins$late_stage <- bins$interval_name
+# Look up ages for intervals names using GTS2023/08
+# Add ages
+occdf <- look_up(occdf = occdf,
+                 early_interval = "early_interval",
+                 late_interval = "late_interval",
+                 int_key = bins,
+                 assign_with_GTS = FALSE)
+# Which intervals could not be looked up?
+vec_max <- which(is.na(occdf$interval_max_ma))
+vec_min <- which(is.na(occdf$interval_min_ma))
+# Use original input ages
+occdf$interval_max_ma[vec_max] <- occdf$max_ma[vec_max]
+occdf$interval_min_ma[vec_min] <- occdf$min_ma[vec_min]
+occdf$early_stage[vec_max] <- occdf$early_interval[vec_max]
+occdf$late_stage[vec_min] <- occdf$late_interval[vec_min]
+# Replace max_ma and min_ma ages
+occdf$max_ma <- occdf$interval_max_ma
+occdf$min_ma <- occdf$interval_min_ma
+# Calculate interval_mid_ma
+occdf$interval_mid_ma <- (occdf$interval_max_ma + occdf$interval_min_ma) / 2
+# Remove any collections with a large age range (> 50 Myr)
+occdf <- occdf[-which(abs(occdf$max_ma - occdf$min_ma) > 50), ]
 
 # Remove suffixes from genus names
-data_clean <- data_clean %>%
-  mutate(genus = str_remove(genus, "\\s(indet\\.|sp\\.|cf\\.|aff\\.|nov\\.sp\\.|sp\\.nov\\.|s\\.l\\.|s\\.s\\.|spp\\.|ex\\sgr\\.|incertae\\ssedis|morphotype.*)$"))%>%
-  mutate(genus = str_extract(genus, "^[^\\(]+")) %>% # Extract genus name before the parenthesis
-  mutate(genus = str_trim(genus)) # Trim leading/trailing spaces
+occdf$genus <- sub(" .*", "", occdf$genus)
 
-# Calculate genus frequencies and split by the first letter
-genus_freq <- data_clean %>%
-  count(genus, sort = TRUE) %>%
-  # filter(n <= 2) %>% # Focus only on low-frequency genera
-  mutate(first_letter = substr(genus, 1, 1)) %>%
-  arrange(first_letter, genus)
+# Round off coordinates to stack collections 
+occdf$lng <- round(occdf$lng, digits = params$n_decs)
+occdf$lat <- round(occdf$lat, digits = params$n_decs)
 
-# Correct genus names by comparing with neighbors
-genus_freq <- genus_freq %>%
-  group_by(first_letter) %>%
-  mutate(
-    corrected_genus = sapply(
-      seq_along(genus),
-      function(i) {
-        current <- genus[i]
-        neighbors <- genus[max(1, i - 1):min(n(), i + 1)] # Get neighbors
-        distances <- stringdist(current, neighbors)
-        closest <- neighbors[which.min(distances)]
-        if (min(distances) == 1) closest else current
-      }
-    )
-  )%>%
-  ungroup()
+# Temporal binning -----------------------------------------------------
+# Use collections to speed up binning and palaeogeographic reconstruction
+colldf <- unique(occdf[, c("collection_no", "lng", "lat", "max_ma", "min_ma")])
+# Use the majority method
+colldf <- bin_time(occdf = colldf, bins = bins, method = params$method)
+# Remove data which do not hit the majority threshold (params$threshold)
+colldf <- colldf[-which(colldf$overlap_percentage < params$threshold), ]
 
-# Merge corrected genus names back to the original data
-data_clean <- data_clean %>%
-  left_join(genus_freq %>% select(genus, corrected_genus), by = "genus") %>%
-  mutate(corrected_genus = ifelse(is.na(corrected_genus), genus, corrected_genus))
+# Palaeorotate collections ---------------------------------------------
+colldf <- palaeorotate(occdf = colldf,
+                       lng = params$lng,
+                       lat = params$lat,
+                       age = params$age,
+                       model = params$models,
+                       method = "point",
+                       uncertainty = FALSE,
+                       round = NULL)
+# Exclude collections which palaeocoordinates could not be estimated for
+colldf <- subset(colldf, !is.na(colldf$p_lat))
 
-# 0.3 To-Do: Paleolatitude Reconstruction Annotation
-#######################
-######################
-#######################
-######################
-#######################
-
-# 0.4 Prepare data for calculating Richness in stages
-data_clean <- data_clean %>%
-  filter(paleolat2 <= 90 & paleolat2 >= -90)
-data_clean <- data_clean %>%
-  filter(paleolng2 <= 180 & paleolng2 >= -180)
-data_clean['mean_ma'] <- (data_clean['max_ma'] + data_clean['min_ma']) / 2
-stages <- read.csv("./data/stages.csv")
-stage_stbin <- stages[,c('stage', 'stbin', 'short', 'bottom', 'mid', 'top',
-                         'dur')]
-data_clean <- data_clean %>%
-  rowwise() %>%
-  mutate(
-    stage = ifelse(length(stage_stbin$stage[which(mean_ma <= stage_stbin$bottom & mean_ma > stage_stbin$top)]) > 0,
-                   stage_stbin$stage[which(mean_ma <= stage_stbin$bottom & mean_ma > stage_stbin$top)][1], NA),
-    stbin = ifelse(length(stage_stbin$stbin[which(mean_ma <= stage_stbin$bottom & mean_ma > stage_stbin$top)]) > 0,
-                   stage_stbin$stbin[which(mean_ma <= stage_stbin$bottom & mean_ma > stage_stbin$top)][1], NA),
-    stage_mid = ifelse(length(stage_stbin$mid[which(mean_ma <= stage_stbin$bottom & mean_ma > stage_stbin$top)]) > 0,
-                       stage_stbin$mid[which(mean_ma <= stage_stbin$bottom & mean_ma > stage_stbin$top)][1], NA)
-  ) %>%
-  ungroup()
-saveRDS(data_clean, file = "data/data_clean.rds")
-# saveRDS(data, file = "data/data.rds")
-# data_clean <- readRDS("data/data_clean.rds")
+# Join datasets --------------------------------------------------------
+# Retain collections present in colldf
+occdf <- occdf[which(occdf$collection_no %in% colldf$collection_no), ]
+# Join datasets
+m <- match(x = occdf$collection_no, table = colldf$collection_no)
+# Add data
+occdf[, colnames(colldf)] <- colldf[m, colnames(colldf)]
+# Filter for unique occurrences from stacked collections
+occdf <- distinct(occdf, lat, lng, family, genus, bin_assignment,
+                  .keep_all = TRUE)
+# Save processed data
+saveRDS(object = occdf, file = "./data/processed/pbdb_data.RDS")
+# Notify
+if (params$notify) {
+  beepr::beep(4)
+}
