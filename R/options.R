@@ -47,6 +47,8 @@ params <- list(
   n_decs = 2,
   # Which Global Plate Models should be used?
   models = c("PALEOMAP"),
+  # Which spacing should be used for spatial binning (in km)?
+  spacing = 250,
   # Columns representing geographic coordinates (latitude and longitude)
   xy = c("paleolat2", "paleolng2"),
   # Number of sites to sample within each buffer

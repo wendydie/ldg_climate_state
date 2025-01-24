@@ -9,6 +9,7 @@
 # Load libraries and options --------------------------------------------
 library(palaeoverse)
 library(dplyr)
+library(dggridR)
 source("./R/options.R")
 
 # Data downloading from PBDB --------------------------------------------
@@ -138,6 +139,24 @@ colldf <- palaeorotate(occdf = colldf,
 # Exclude collections which palaeocoordinates could not be estimated for
 colldf <- subset(colldf, !is.na(colldf$p_lat))
 
+# Spatial binning -------------------------------------------------------
+# Construct a global grid with cells with approx params$spacing km
+dggs <- dgconstruct(spacing = params$spacing)
+# Get cells
+colldf$cell <- dgGEO_to_SEQNUM(dggs = dggs, 
+                         in_lon_deg = colldf[, params$p_lng], 
+                         in_lat_deg = colldf[, params$p_lat])$seqnum
+# Get coordinates from cells
+xy <- dgcellstogrid(dggs = dggs, cells = colldf$cell, return_sf = FALSE)
+# Rename columns
+colnames(xy) <- c("cell_lng", "cell_lat", "cell_index")
+# Merge dataframes
+# Join datasets
+m <- match(x = colldf$cell, table = xy$cell_index)
+# Add data
+colldf[, colnames(xy)] <- xy[m, colnames(xy)]
+# Drop column
+colldf <- colldf[, -ncol(colldf)]
 # Join datasets --------------------------------------------------------
 # Retain collections present in colldf
 occdf <- occdf[which(occdf$collection_no %in% colldf$collection_no), ]
