@@ -1,11 +1,33 @@
-# function 1. calculating Good'U index
+# Function: incfreq
+# Description:
+#   This function calculates the frequency of occurrences for each unique genus
+#   in the input dataset and returns a list containing the total number of rows 
+#   in the dataset and the frequency of each genus in descending order.
+# 
+# Arguments:
+#   dat - A dataframe that must include a column named 'genus', representing 
+#         biological genus names or similar categories.
+# 
+# Returns:
+#   A list containing:
+#     1. The total number of rows in the input dataset (total occurrences).
+#     2. A vector of frequencies for each genus, sorted in descending order.
+# 
+# Example:
+#   Input:
+#     dat <- data.frame(genus = c("Panthera", "Canis", "Panthera", 
+#                                 "Felis", "Panthera", "Felis"))
+#   Output:
+#     list(c(6, 3, 2, 1)) 
+#     # 6 = total rows, 3 = Panthera, 2 = Felis, 1 = Canis
+
 incfreq <- function(dat){
   freq <- dat %>%
     count(genus, name = "frequency") %>%
     arrange(desc(frequency))
   nT <- nrow(dat)
   y <- c(nT, freq$frequency)
-  y <- list(as.numeric(y))
+  y <- as.numeric(y)
   return(y)
 }
 
@@ -33,86 +55,42 @@ Fun.ince <- function(x) {
 }
 
 
-# function 3. Common Function to count references, collections and occurrences
-count_occ_col_refs <- function(dat) {
-  # Ensure required columns exist
-  required_columns <- c("occurrence_no", "collection_no", "reference_no")
-  if (!all(required_columns %in% colnames(dat))) {
-    stop("Missing required columns.")
-  }
-  # Calculate unique counts for each column
-  sapply(dat[required_columns], function(col) length(unique(col)))
-}
-
-
-#function 4.
-compute_richness_summary <- function(dat, xy, nSite = 10, r = 1500, 
-                                     crs = 'epsg:4326', q = c(0), 
-                                     datatype = "incidence_freq", 
-                                     base = "coverage", level = 0.7, nboot = 0,
-                                     stage_name = NULL, 
-                                     stage_mid = NULL, stbin = NULL) {
-  # Step 1: Check for stage information in dat if not provided
-  if (is.null(stage_name) && "stage_name" %in% colnames(dat)) {
-    stage_name <- unique(dat$stage)
-    if (length(stage_name) > 1) {
-      stop("Multiple stage names found in dat. Please provide a specific stage_name.")
-    }
-  }
+process_data <- function(dat,
+                         q = c(0, 1, 2),
+                         datatype = "incidence_freq",
+                         base = "coverage",
+                         level = NULL,
+                         nboot = 50,
+                         req_cols=c("occurrence_no", "collection_no", "reference_no")) {
+  # Step 1: Calculate frequency per tsbin
+  inc_dat <- lapply(split(dat, dat$tsbin), incfreq)
   
-  if (is.null(stage_mid) && "stage_mid" %in% colnames(dat)) {
-    stage_mid <- unique(dat$stage_mid)
-    if (length(stage_mid) > 1) {
-      stop("Multiple stage times found in dat. Please provide a specific stage_mid.")
-    }
-  }
+  # Step 2: Diversity estimation using iNEXT
+  rich_est <- iNEXT::estimateD(x = inc_dat, q = q, datatype = datatype, 
+                               base = base, level = level, nboot = nboot)
+  colnames(rich_est)[colnames(rich_est) == "Assemblage"] <- "tsbin"
+  # Step 3: Extract diversity info
+  rich_info <- do.call(rbind, lapply(inc_dat, Fun.ince))
+  rich_info <- as.data.frame(rich_info)
+  colnames(rich_info) <- c("nT", "nOcc", "Sobs", "Chat", "GoodU", "Mrate", paste0("Q", 1:10))
+  rich_info$tsbin <- rownames(rich_info)
+  num_cols <- c("nT", "nOcc", "Sobs", "Chat", "GoodU", "Mrate", paste0("Q", 1:10))
+  rich_info[num_cols] <- lapply(rich_info[num_cols], as.numeric)
   
-  if (is.null(stbin) && "stbin" %in% colnames(dat)) {
-    stbin <- unique(dat$stbin)
-    if (length(stbin) > 1) {
-      stop("Multiple stbin values found in dat. Please provide a specific stbin.")
-    }
-  }
+  # Step 4: Unique counts for required columns
+  ts_stats <- do.call(rbind, lapply(split(dat, dat$tsbin), function(g) {
+    stats <- sapply(req_cols, function(col) length(unique(g[[col]])))
+    c(tsbin = unique(g$tsbin), stats)
+  }))
+  ts_stats <- as.data.frame(ts_stats)
+  ts_stats[req_cols] <- lapply(ts_stats[req_cols], as.numeric)
   
-  # Step 2: Generate incidence frequencies using buffers
-  tryCatch({
-    inc_freq <- buffers(dat, xy, nSite = nSite, r = r, crs = crs, output = 'incidence_freq')
-  }, error = function(e) {
-    message("Error: ", e$message)
-    message("Check buffer radius (r) and minimum site count (nSite). Try increasing r or reducing nSite.")
-    return(NULL)
-  })
-  if (is.null(inc_freq)) return(NULL) # Skip further processing if buffers fail
-  
-  # Step 3: Compute richness metrics for each buffer using iNEXT::estimateD
-  combined_rich <- iNEXT::estimateD(x = inc_freq, q = q, datatype = datatype, 
-                     base = base, level = level, nboot = nboot)
-  
-  # Add stage information to combined_rich
-  combined_rich <- combined_rich %>%
-    mutate(stage_name = stage_name, stage_mid = stage_mid, stbin = stbin)
-  
-  # Step 4: Apply Fun.ince to all buffers
-  fun_results <- lapply(inc_freq, function(buf) {
-    Fun.ince(buf)
-  })
-  
-  # Combine results across all iterations into a single data frame
-  rich_info_df <- do.call(rbind, fun_results)
-  
-  # Convert to data frame and ensure numeric columns
-  rich_info_df <- as.data.frame(rich_info_df)
-  colnames(rich_info_df) <- c("nT", "n_occ",
-                         "Sobs", "Chat", "Good.u", "m.rate",
-                         paste0("Q", 1:10))
-  rich_info_df$assem <- rownames(rich_info_df)
-  numeric_cols <- c("nT", "n_occ", "Sobs", "Chat", "Good.u", "m.rate", paste0("Q", 1:10))
-  rich_info_df[numeric_cols] <- lapply(rich_info_df[numeric_cols], as.numeric)
-  
-  # Add stage information to rich_df
-  rich_info_df <- rich_info_df %>%
-    mutate(stage_name = stage_name, stage_mid = stage_mid, stbin = stbin)
-
-  # Return combined richness results and the summary
-  list(combined_rich = combined_rich, rich_info_df = rich_info_df)
+  # Step 5: Merge diversity info and unique stats
+  # Step 5: Merge all results
+  rich_est$tsbin <- as.character(rich_est$tsbin)
+  rich_info$tsbin <- as.character(rich_info$tsbin)
+  ts_stats$tsbin <- as.character(ts_stats$tsbin)
+  rich_finalInfo <- Reduce(function(x, y) merge(x, y, by = "tsbin", all = TRUE), 
+                           list(rich_est, rich_info, ts_stats))
+  return(rich_finalInfo)
 }

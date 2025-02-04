@@ -9,7 +9,6 @@
 # Load libraries and options --------------------------------------------
 library(palaeoverse)
 library(dplyr)
-library(dggridR)
 source("./R/options.R")
 
 # Data downloading from PBDB --------------------------------------------
@@ -25,7 +24,7 @@ if (params$download || !file.exists("./data/raw/pbdb_data.RDS")) {
   # Save raw data (do not modify to ensure complete reproducibility)
   saveRDS(occdf, "./data/raw/pbdb_data.RDS")
 } else {
-  # Read data
+  # Read data 576848
   occdf <- readRDS("./data/raw/pbdb_data.RDS")
 }
 
@@ -52,6 +51,7 @@ bins <- bins[-which(bins$interval_name %in% pleis), ]
 # update Gelasian to be all of the Pleistocene
 vec <- which(bins$interval_name == "Gelasian")
 bins$interval_name[vec] <- "Pleistocene"
+bins$abbr[vec] <- "Ple"
 # Update min_ma
 bins$min_ma[vec] <- bins[which(bins$interval_name == "Holocene"), "max_ma"]
 # Update mid_ma
@@ -61,6 +61,21 @@ bins$duration_myr[vec] <- (bins$max_ma[vec] - bins$min_ma[vec])
 # Update bin numbers
 bins$bin <- 1:nrow(bins)
 row.names(bins) <- 1:nrow(bins)
+
+## GTS 2023
+GTS_2023 <- read.csv('./data/GTS_2023.csv')
+bins <- bins %>%
+  left_join(GTS_2023, by="bin") %>%
+  mutate(
+    max_ma = bottom,
+    mid_ma = mid,
+    min_ma = top,
+    duration_myr = dur
+  ) %>%
+  select(bin, interval_name, rank, max_ma, mid_ma, min_ma,
+         duration_myr, short, font, sys, system, series,
+         systemCol, seriesCol, stageCol, stageRGB)
+bins <- bins %>% filter(mid_ma < 485.4)
 # Save time bins
 saveRDS(object = bins, file = "./data/time_bins.RDS")
 
@@ -109,11 +124,18 @@ occdf$max_ma <- occdf$interval_max_ma
 occdf$min_ma <- occdf$interval_min_ma
 # Calculate interval_mid_ma
 occdf$interval_mid_ma <- (occdf$interval_max_ma + occdf$interval_min_ma) / 2
-# Remove any collections with a large age range (> 50 Myr)
+# Remove any collections with a large age range (> 50 Myr) 575909
 occdf <- occdf[-which(abs(occdf$max_ma - occdf$min_ma) > 50), ]
 
 # Remove suffixes from genus names
 occdf$genus <- sub(" .*", "", occdf$genus)
+
+## Remove rows where the 'genus' column contains the value "NO_GENUS_SPECIFIED" 575880
+occdf <- occdf %>%
+filter(genus != "NO_GENUS_SPECIFIED")
+## Remove rows where any of the columns 'genus', 'lat', or 'lng' have NA values
+occdf <- occdf %>%
+  filter(!is.na(genus) & !is.na(lng) & !is.na(lat))
 
 # Round off coordinates to stack collections 
 occdf$lng <- round(occdf$lng, digits = params$n_decs)
@@ -139,36 +161,30 @@ colldf <- palaeorotate(occdf = colldf,
 # Exclude collections which palaeocoordinates could not be estimated for
 colldf <- subset(colldf, !is.na(colldf$p_lat))
 
-# Spatial binning -------------------------------------------------------
-# Construct a global grid with cells with approx params$spacing km
-dggs <- dgconstruct(spacing = params$spacing)
-# Get cells
-colldf$cell <- dgGEO_to_SEQNUM(dggs = dggs, 
-                         in_lon_deg = colldf[, params$p_lng], 
-                         in_lat_deg = colldf[, params$p_lat])$seqnum
-# Get coordinates from cells
-xy <- dgcellstogrid(dggs = dggs, cells = colldf$cell, return_sf = FALSE)
-# Rename columns
-colnames(xy) <- c("cell_lng", "cell_lat", "cell_index")
-# Merge dataframes
-# Join datasets
-m <- match(x = colldf$cell, table = xy$cell_index)
-# Add data
-colldf[, colnames(xy)] <- xy[m, colnames(xy)]
-# Drop column
-colldf <- colldf[, -ncol(colldf)]
 # Join datasets --------------------------------------------------------
-# Retain collections present in colldf
+# Retain collections present in colldf 529008
 occdf <- occdf[which(occdf$collection_no %in% colldf$collection_no), ]
 # Join datasets
 m <- match(x = occdf$collection_no, table = colldf$collection_no)
 # Add data
 occdf[, colnames(colldf)] <- colldf[m, colnames(colldf)]
-# Filter for unique occurrences from stacked collections
-occdf <- distinct(occdf, lat, lng, family, genus, bin_assignment,
+# Filter for unique occurrences from stacked collections 461054 
+occdf <- distinct(occdf, lat, lng, family, genus, bin_assignment, collection_no,
                   .keep_all = TRUE)
+
 # Save processed data
 saveRDS(object = occdf, file = "./data/processed/pbdb_data.RDS")
+
+TAS <- TAS %>%
+  rowwise() %>%
+  mutate(bin_midpoint = if_else(
+    any(time_bins$max_ma >= UpperAge & time_bins$min_ma <= LowerAge),
+    time_bins$mid_ma[which.max(time_bins$max_ma >= UpperAge & time_bins$min_ma <= LowerAge)],
+    NA_real_
+  )) %>%
+  ungroup()
+
+saveRDS(object = TAS, file = "./data/processed/TAS_Scenario8.RDS")
 # Notify
 if (params$notify) {
   beepr::beep(4)

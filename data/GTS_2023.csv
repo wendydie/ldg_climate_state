@@ -1,0 +1,98 @@
+sys,system,series,stage,short,bottom,mid,top,dur,bin,systemCol,seriesCol,col,stageCol,stage name,stageRGB,CGMW
+Cm,Cambrian,Terreneuvian,Fortunian,For,538.8,533.9,529,9.8,1,#94ac72,#9db989,#a9be93,#99B575,Fortunian Stage,"153,181,117",#99B575
+Cm,Cambrian,Terreneuvian,Stage 2,St2,529,525,521,8,2,#94ac72,#9db989,#b6c29e,#A6BA80,Stage 2 Stage,"166,186,128",#A6BA80
+Cm,Cambrian,Series 2,Stage 3,St3,521,517.75,514.5,6.5,3,#94ac72,#a9c595,#b5ca9f,#A6C583,Stage 3 Stage,"166,197,131",#A6C583
+Cm,Cambrian,Series 2,Stage 4,St4,514.5,510.5,506.5,8,4,#94ac72,#a9c595,#c0ceaa,#B3CA8E,Stage 4 Stage,"179,202,142",#B3CA8E
+Cm,Cambrian,Maolingian,Wulian,Wul,506.5,505.5,504.5,2,5,#94ac72,#b6d2a2,#c1d6af,#B3D492,Wuliuan Stage,"179,212,146",#B3D492
+Cm,Cambrian,Maolingian,Drumian,Dru,504.5,502.5,500.5,4,6,#94ac72,#b6d2a2,#cddbb8,#BFD99D,Drumian Stage,"191,217,157",#BFD99D
+Cm,Cambrian,Maolingian,Guzhangian,Guz,500.5,498.75,497,3.5,7,#94ac72,#b6d2a2,#d6e1c1,#CCDFAA,Guzhangian Stage,"204,223,170",#CCDFAA
+Cm,Cambrian,Furongian,Paibian,Pai,497,495.6,494.2,2.8,8,#94ac72,#c2ddb0,#d8e8c4,#CCEBAE,Paibian Stage,"204,235,174",#CCEBAE
+Cm,Cambrian,Furongian,Jiangshanian,Jia,494.2,492.6,491,3.2,9,#94ac72,#c2ddb0,#e4efcf,#D9F0BB,Jiangshanian Stage,"217,240,187",#D9F0BB
+Cm,Cambrian,Furongian,Stages 10,St10,491,488.925,486.85,4.15,10,#94ac72,#c2ddb0,#edf2db,#E6F5C9,Stage 10 Stage,"230,245,201",#E6F5C9
+O,Ordovician,Lower Ordovician,Tremadocian,Tre,486.85,481.975,477.1,9.75,11,#009881,#00a180,#0dac98,#33A97E,Tremadocian Stage,"51,169,126",#33A97E
+O,Ordovician,Lower Ordovician,Floian,Flo,477.1,474.2,471.3,5.8,12,#009881,#00a180,#0eb1a0,#41B087,Floian Stage,"65,176,135",#41B087
+O,Ordovician,Middle Ordovician,Dapingian,Dap,471.3,470.35,469.4,1.9,13,#009881,#34b597,#67c0ae,#66C092,Dapingian Stage,"102,192,146",#66C092
+O,Ordovician,Middle Ordovician,Darriwilian,Dar,469.4,463.8,458.2,11.2,14,#009881,#34b597,#79c5b8,#74C69C,Darriwilian Stage,"116,198,156",#74C69C
+O,Ordovician,Upper Ordovician,Sandbian,Sbd,458.2,455.5,452.8,5.4,15,#009881,#8ccbae,#9bceaf,#8CD094,Sandbian Stage,"140,208,148",#8CD094
+O,Ordovician,Upper Ordovician,Katian,Kat,452.8,449,445.2,7.6,16,#009881,#8ccbae,#a6d5c3,#99D69F,Katian Stage,"153,214,159",#99D69F
+O,Ordovician,Upper Ordovician,Hirnantian,Hir,445.2,444.15,443.1,2.1,17,#009881,#8ccbae,#b6d9c3,#A6DBAB,Hirnantian Stage,"166,219,171",#A6DBAB
+S,Silurian,Llandovery,Rhuddanian,Rhu,443.1,441.8,440.5,2.6,18,#bfe0cd,#8ccbae,#b3dccc,#A6DCB5,Rhuddanian Stage,"166,220,181",#A6DCB5
+S,Silurian,Llandovery,Aeronian,Aer,440.5,439.55,438.6,1.9,19,#bfe0cd,#8ccbae,#c1e1d6,#B3E1C2,Aeronian Stage,"179,225,194",#B3E1C2
+S,Silurian,Llandovery,Telychian,Tel,438.6,435.75,432.9,5.7,20,#bfe0cd,#8ccbae,#cae8e0,#BFE6CF,Telychian Stage,"191,230,207",#BFE6CF
+S,Silurian,Wenlock,Sheinwoodian,She,432.9,431.75,430.6,2.3,21,#bfe0cd,#c1e1d6,#cce7d8,#BFE6C3,Sheinwoodian Stage,"191,230,195",#BFE6C3
+S,Silurian,Wenlock,Homerian,Hom,430.6,428.65,426.7,3.9,22,#bfe0cd,#c1e1d6,#d6ebe2,#CCEBD1,Homerian Stage,"204,235,209",#CCEBD1
+S,Silurian,Ludlow,Gorstian,Gor,426.7,425.85,425,1.7,23,#bfe0cd,#cce7e2,#d6ecea,#CCECDD,Gorstian Stage,"204,236,221",#CCECDD
+S,Silurian,Ludlow,Ludfordian,Lud,425,423.85,422.7,2.3,24,#bfe0cd,#cce7e2,#e2f1ec,#D9F0DF,Ludfordian Stage,"217,240,223",#D9F0DF
+S,Silurian,Pridoli,Pridoli,Pri,422.7,421.16,419.62,3.08,25,#bfe0cd,#ebf5ec,#ebf5ec,#E6F5E1,Pridoli Stage,"230,245,225",#E6F5E1
+D,Devonian,Lower Devonian,Lochkovian,Loc,419.62,416.32,413.02,6.6,26,#d49f51,#e9ba6a,#eac378,#E5B75A,Lochkovian Stage,"229,183,90",#E5B75A
+D,Devonian,Lower Devonian,Pragian,Pra,413.02,411.82,410.62,2.4,27,#d49f51,#e9ba6a,#ebcd87,#E5C468,Pragian Stage,"229,196,104",#E5C468
+D,Devonian,Lower Devonian,Emsian,Ems,410.62,402.045,393.47,17.15,28,#d49f51,#e9ba6a,#edd595,#E5D075,Emsian Stage,"229,208,117",#E5D075
+D,Devonian,Middle Devonian,Eifelian,Eif,393.47,390.71,387.95,5.52,29,#d49f51,#f4ce85,#f5da93,#F1D576,Eifelian Stage,"241,213,118",#F1D576
+D,Devonian,Middle Devonian,Givetian,Giv,387.95,385.13,382.31,5.64,30,#d49f51,#f4ce85,#f5e2a0,#F1E185,Givetian Stage,"241,225,133",#F1E185
+D,Devonian,Upper Devonian,Frasnian,Fra,382.31,377.23,372.15,10.16,31,#d49f51,#f5e4b6,#f4edc3,#F2EDAD,Frasnian Stage,"242,237,173",#F2EDAD
+D,Devonian,Upper Devonian,Famennian,Fam,372.15,365.505,358.86,13.29,32,#d49f51,#f5e4b6,#f4f0d5,#F2EDB3,Famennian Stage,"242,237,179",#F2EDB3
+C,Carboniferous,Mississippian,Tournaisian,Tou,358.86,352.78,346.7,12.16,33,#6eafb5,#769e83,#9db989,#8CB06C,Tournaisian Stage,"140,176,108",#8CB06C
+C,Carboniferous,Mississippian,Visean,Vis,346.7,338.5,330.3,16.4,34,#6eafb5,#769e83,#b7c089,#A6B96C,Visean Stage,"166,185,108",#A6B96C
+C,Carboniferous,Mississippian,Serpukhovian,Ser,330.3,326.85,323.4,6.9,35,#6eafb5,#769e83,#cdc888,#BFC26B,Serpukhovian Stage,"191,194,107",#BFC26B
+C,Carboniferous,Pennsylvanian,Bashkirian,Bas,323.4,319.3,315.2,8.2,36,#6eafb5,#a6c9cd,#a6c9cd,#99C2B5,Bashkirian Stage,"153,194,181",#99C2B5
+C,Carboniferous,Pennsylvanian,Moscovian,Mos,315.2,311.1,307,8.2,37,#6eafb5,#a6c9cd,#bed3ce,#B3CBB9,Moscovian Stage,"179,203,185",#B3CBB9
+C,Carboniferous,Pennsylvanian,Kasimovian,Kas,307,305.35,303.7,3.3,38,#6eafb5,#a6c9cd,#cad8d9,#BFD0C5,Kasimovian Stage,"191,208,197",#BFD0C5
+C,Carboniferous,Pennsylvanian,Gzhelian,Gzh,303.7,301.3,298.9,4.8,39,#6eafb5,#a6c9cd,#d6dcda,#CCD4C7,Gzhelian Stage,"204,212,199",#CCD4C7
+P,Permian,Cisuralian,Asselian,Ass,298.9,296.21,293.52,5.38,40,#e35b41,#e5755f,#e07f6c,#E36350,Asselian Stage,"227,99,80",#E36350
+P,Permian,Cisuralian,Sakmarian,Sak,293.52,291.81,290.1,3.42,41,#e35b41,#e5755f,#e18a76,#E36F5C,Sakmarian Stage,"227,111,92",#E36F5C
+P,Permian,Cisuralian,Artinskian,Art,290.1,286.7,283.3,6.8,42,#e35b41,#e5755f,#e39684,#E37B68,Artinskian Stage,"227,123,104",#E37B68
+P,Permian,Cisuralian,Kungurian,Kun,283.3,278.85,274.4,8.9,43,#e35b41,#e5755f,#e49f90,#E38776,Kungurian Stage,"227,135,118",#E38776
+P,Permian,Guadalupian,Roadian,Roa,274.4,270.65,266.9,7.5,44,#e35b41,#f18f76,#f49984,#FB8069,Roadian Stage,"251,128,105",#FB8069
+P,Permian,Guadalupian,Wordian,Wor,266.9,265.59,264.28,2.62,45,#e35b41,#f18f76,#f4a692,#FB8D76,Wordian Stage,"251,141,118",#FB8D76
+P,Permian,Guadalupian,Capitanian,Cap,264.28,261.895,259.51,4.77,46,#e35b41,#f18f76,#f6af9b,#FB9A85,Capitanian Stage,"251,154,133",#FB9A85
+P,Permian,Lopingian,Wuchiapingian,Wuc,259.51,256.825,254.14,5.37,47,#e35b41,#f8baab,#fac4b8,#FCB4A2,Wuchiapingian Stage,"252,180,162",#FCB4A2
+P,Permian,Lopingian,Changhsingian,Chg,254.14,253.021,251.902,2.238,48,#e35b41,#f8baab,#facfc6,#FCC0B2,Changhsingian Stage,"252,192,178",#FCC0B2
+Tr,Triassic,Lower Triassic,Induan,Ind,251.902,250.901,249.9,2.002,49,#984b99,#a9599e,#b266a6,#A4469F,Induan Stage,"164,70,159",#A4469F
+Tr,Triassic,Lower Triassic,Olenekian,Ole,249.9,248.3,246.7,3.2,50,#984b99,#a9599e,#bb71ac,#B051A5,Olenekian Stage,"176,81,165",#B051A5
+Tr,Triassic,Middle Triassic,Anisian,Ani,246.7,244.082,241.464,5.236,51,#984b99,#bd86bd,#c793c3,#BC75B7,Anisian Stage,"188,117,183",#BC75B7
+Tr,Triassic,Middle Triassic,Ladinian,Lad,241.464,239.232,237,4.464,52,#984b99,#bd86bd,#d0a0c8,#C983BF,Ladinian Stage,"201,131,191",#C983BF
+Tr,Triassic,Upper Triassic,Carnian,Car,237,232.15,227.3,9.7,53,#984b99,#c9a6d0,#d1b3d5,#C99BCB,Carnian Stage,"201,155,203",#C99BCB
+Tr,Triassic,Upper Triassic,Norian,Nor,227.3,216.5,205.7,21.6,54,#984b99,#c9a6d0,#dbc1de,#D6AAD3,Norian Stage,"214,170,211",#D6AAD3
+Tr,Triassic,Upper Triassic,Rhaetian,Rha,205.7,203.55,201.4,4.3,55,#984b99,#c9a6d0,#e5cbe4,#E3B9DB,Rhaetian Stage,"227,185,219",#E3B9DB
+J,Jurassic,Lower Jurassic,Hettangian,Het,201.4,200.45,199.5,1.9,56,#00b0e2,#02b1ea,#22b5e9,#4EB3D3,Hettangian Stage,"78,179,211",#4EB3D3
+J,Jurassic,Lower Jurassic,Sinemurian,Sin,199.5,196.2,192.9,6.6,57,#00b0e2,#02b1ea,#5ebeee,#67BCD8,Sinemurian Stage,"103,188,216",#67BCD8
+J,Jurassic,Lower Jurassic,Pliensbachian,Plb,192.9,188.55,184.2,8.7,58,#00b0e2,#02b1ea,#86c9f3,#80C5DD,Pliensbachian Stage,"128,197,221",#80C5DD
+J,Jurassic,Lower Jurassic,Toarcian,Toa,184.2,179.45,174.7,9.5,59,#00b0e2,#02b1ea,#a3d1f3,#99CEE3,Toarcian Stage,"153,206,227",#99CEE3
+J,Jurassic,Middle Jurassic,Aalenian,Aal,174.7,172.8,170.9,3.8,60,#00b0e2,#84cfee,#a2d8f0,#9AD9DD,Aalenian Stage,"154,217,221",#9AD9DD
+J,Jurassic,Middle Jurassic,Bajocian,Baj,170.9,169.55,168.2,2.7,61,#00b0e2,#84cfee,#b0dff1,#A6DDE0,Bajocian Stage,"166,221,224",#A6DDE0
+J,Jurassic,Middle Jurassic,Bathonian,Bat,168.2,166.75,165.3,2.9,62,#00b0e2,#84cfee,#bce3f2,#B3E2E3,Bathonian Stage,"179,226,227",#B3E2E3
+J,Jurassic,Middle Jurassic,Callovian,Cal,165.3,163.4,161.5,3.8,63,#00b0e2,#84cfee,#cae6f2,#BFE7E5,Callovian Stage,"191,231,229",#BFE7E5
+J,Jurassic,Upper Jurassic,Oxfordian,Oxf,161.5,158.15,154.8,6.7,64,#00b0e2,#bbe4fa,#cce8fd,#BFE7F1,Oxfordian Stage,"191,231,241",#BFE7F1
+J,Jurassic,Upper Jurassic,Kimmeridgian,Kim,154.8,152,149.2,5.6,65,#00b0e2,#bbe4fa,#d4eefd,#CCECF4,Kimmeridgian Stage,"204,236,244",#CCECF4
+J,Jurassic,Upper Jurassic,Tithonian,Tit,149.2,146.15,143.1,6.1,66,#00b0e2,#bbe4fa,#e0f2fc,#D9F1F7,Tithonian Stage,"217,241,247",#D9F1F7
+K,Cretaceous,Lower Cretaceous,Berriasian,Ber,143.1,140.075,137.05,6.05,67,#95c562,#9fca70,#9ec979,#8CCD60,Berriasian Stage,"140,205,96",#8CCD60
+K,Cretaceous,Lower Cretaceous,Valanginian,Val,137.05,134.825,132.6,4.45,68,#95c562,#9fca70,#a8d182,#99D36A,Valanginian Stage,"153,211,106",#99D36A
+K,Cretaceous,Lower Cretaceous,Hauterivian,Hau,132.6,129.185,125.77,6.83,69,#95c562,#9fca70,#b7d690,#A6D975,Hauterivian Stage,"166,217,117",#A6D975
+K,Cretaceous,Lower Cretaceous,Barremian,Bar,125.77,123.585,121.4,4.37,70,#95c562,#9fca70,#c2da9c,#B3DF7F,Barremian Stage,"179,223,127",#B3DF7F
+K,Cretaceous,Lower Cretaceous,Aptian,Apt,121.4,117.3,113.2,8.2,71,#95c562,#9fca70,#cfe1a7,#BFE48A,Aptian Stage,"191,228,138",#BFE48A
+K,Cretaceous,Lower Cretaceous,Albian,Alb,113.2,106.85,100.5,12.7,72,#95c562,#9fca70,#d9e8b1,#CCEA97,Albian Stage,"204,234,151",#CCEA97
+K,Cretaceous,Upper Cretaceous,Cenomanian,Cen,100.5,97.2,93.9,6.6,73,#95c562,#b9d25d,#c6d86c,#B3DE53,Cenomanian Stage,"179,222,83",#B3DE53
+K,Cretaceous,Upper Cretaceous,Turonian,Tur,93.9,91.85,89.8,4.1,74,#95c562,#b9d25d,#d2dd77,#BFE35D,Turonian Stage,"191,227,93",#BFE35D
+K,Cretaceous,Upper Cretaceous,Coniacian,Con,89.8,87.75,85.7,4.1,75,#95c562,#b9d25d,#dce383,#CCE968,Coniacian Stage,"204,233,104",#CCE968
+K,Cretaceous,Upper Cretaceous,Santonian,San,85.7,84.65,83.6,2.1,76,#95c562,#b9d25d,#e5e88f,#D9EF74,Santonian Stage,"217,239,116",#D9EF74
+K,Cretaceous,Upper Cretaceous,Campanian,Cam,83.6,77.9,72.2,11.4,77,#95c562,#b9d25d,#efec9b,#E6F47F,Campanian Stage,"230,244,127",#E6F47F
+K,Cretaceous,Upper Cretaceous,Maastrichtian,Maa,72.2,69.1,66,6.2,78,#95c562,#b9d25d,#f5f1a7,#F2FA8C,Maastrichtian Stage,"242,250,140",#F2FA8C
+Pg,Paleogene,Paleocene,Danian,Dan,66,63.83,61.66,4.34,79,#f8ac70,#f8b77d,#fbc27f,#FDB462,Danian Stage,"253,180,98",#FDB462
+Pg,Paleogene,Paleocene,Selandian,Se,61.66,60.45,59.24,2.42,80,#f8ac70,#f8b77d,#fccb87,#FEBF65,Selandian Stage,"254,191,101",#FEBF65
+Pg,Paleogene,Paleocene,Thanetian,Th,59.24,57.62,56,3.24,81,#f8ac70,#f8b77d,#fccb87,#FDBF6F,Thanetian Stage,"253,191,111",#FDBF6F
+Pg,Paleogene,Eocene,Ypresian,Ypr,56,52.035,48.07,7.93,82,#f8ac70,#fac18a,#f7ba8e,#FCA773,Ypresian Stage,"252,167,115",#FCA773
+Pg,Paleogene,Eocene,Lutetian,Lut,48.07,44.55,41.03,7.04,83,#f8ac70,#fac18a,#f9c39f,#FDB482,Lutetian Stage,"253,180,130",#FDB482
+Pg,Paleogene,Eocene,Bartonian,Brt,41.03,39.37,37.71,3.32,84,#f8ac70,#fac18a,#fcceac,#FDC091,Bartonian Stage,"253,192,145",#FDC091
+Pg,Paleogene,Eocene,Priabonian,Prb,37.71,35.805,33.9,3.81,85,#f8ac70,#fac18a,#fcd7ba,#FDCDA1,Priabonian Stage,"253,205,161",#FDCDA1
+Pg,Paleogene,Oligocene,Rupelian,Rup,33.9,30.6,27.3,6.6,86,#f8ac70,#fdcb98,#fedfb3,#FED99A,Rupelian Stage,"254,217,154",#FED99A
+Pg,Paleogene,Oligocene,Chattian,Cht,27.3,25.17,23.04,4.26,87,#f8ac70,#fdcb98,#ffeac3,#FEE6AA,Chattian Stage,"254,230,170",#FEE6AA
+Ng,Neogene,Miocene,Aquitanian,Aqu,23.04,21.745,20.45,2.59,88,#fede1a,#ffed02,#fff14a,#FFFF33,Aquitanian Stage,"255,255,51",#FFFF33
+Ng,Neogene,Miocene,Burdigalian,Bur,20.45,18.215,15.98,4.47,89,#fede1a,#ffed02,#fef26b,#FFFF41,Burdigalian Stage,"255,255,65",#FFFF41
+Ng,Neogene,Miocene,Langhian,Lan,15.98,14.9,13.82,2.16,90,#fede1a,#ffed02,#fef488,#FFFF4D,Langhian Stage,"255,255,77",#FFFF4D
+Ng,Neogene,Miocene,Serravallian,Ser,13.82,12.725,11.63,2.19,91,#fede1a,#ffed02,#FFFF59,#FFFF59,Serravallian Stage,"255,255,89",#FFFF59
+Ng,Neogene,Miocene,Tortonian,Tor,11.63,9.438,7.246,4.384,92,#fede1a,#ffed02,#FFFF66,#FFFF66,Tortonian Stage,"255,255,102",#FFFF66
+Ng,Neogene,Miocene,Messinian,Mes,7.246,6.2895,5.333,1.913,93,#fede1a,#ffed02,#FFFF73,#FFFF73,Messinian Stage,"255,255,115",#FFFF73
+Ng,Neogene,Miocene,Zanclean,Zan,5.333,4.4665,3.6,1.733,94,#fede1a,#fff7b2,#fff7b2,#FFFFB3,Zanclean Stage,"255,255,179",#FFFFB3
+Ng,Neogene,Pliocene,Piacenzian,Pia,3.6,3.09,2.58,1.02,95,#fede1a,#fff7b2,#fff7b2,#FFFFBF,Piacenzian Stage,"255,255,191",#FFFFBF
+Q,Quarternary,Pleistocene,Pleistocene,Ple,2.58,1.29585,0.0117,2.5683,96,#fff69b,#fff2c5,#fff2c5,#FEEBD2,Holocene Series,"254,235,210",#FEEBD2
+Q,Quarternary,Holocene,Holocene,Hol,0.0117,0.00585,0,0.0117,97,#fff69b,#fff5eb,#fff5eb,#FFEFAF,Pleistocene Series,"255,239,175",#FFEFAF

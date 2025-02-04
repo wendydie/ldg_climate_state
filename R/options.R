@@ -1,11 +1,4 @@
-# Header ----------------------------------------------------------------
-# Project: LDG_climate_state
-# File name: options.R
-# Last updated: 2025-01-21
-# Author: Lewis A. Jones; Die (Wendy) Wen
-# Email: lewis.jones@ucl.ac.uk; die.wen@ucl.ac.uk
-# Repository: https://github.com/wendydie/LDG_climate_state
-# -----------------------------------------------------------------------
+
 # Parameters and options for analyses
 params <- list(
   # Download updated dataset
@@ -48,13 +41,9 @@ params <- list(
   # Which Global Plate Models should be used?
   models = c("PALEOMAP"),
   # Which spacing should be used for spatial binning (in km)?
-  spacing = 250,
-  # Columns representing geographic coordinates (latitude and longitude)
-  xy = c("paleolat2", "paleolng2"),
-  # Number of sites to sample within each buffer
-  nSite = 1, 
-  # Buffer radius in kilometers
-  r = 200, 
+  spacing = 1000,
+  # Whether to clean the data again depends on the situation.
+  clean_again = FALSE,
   # Coordinate reference system, default is WGS84
   crs = 'epsg:4326', 
   # Diversity order(s) to calculate; 0 for species richness
@@ -66,55 +55,12 @@ params <- list(
   # Desired sample coverage level (e.g., 0.7 = 70% of species expected to be detected)
   level = 0.7, 
   # Number of bootstrap replicates for confidence intervals; 0 means no bootstrapping
-  nboot = 50, 
-  stage_name = NULL, 
-  stage_mid = NULL,
-  stbin = NULL,
+  nboot = 50，
   notify = TRUE
 )
 
-
-# # Required packages
-# required_packages <- c("httr", 
-#                        "readr", 
-#                        "stringdist", 
-#                        "divvy", 
-#                        "tictoc", 
-#                        "dplyr", 
-#                        "tidyr", 
-#                        "stringr", 
-#                        "iNEXT",
-#                        "ggplot2",
-#                        "pbapply",
-#                        "parallel")
-# invisible(lapply(required_packages, 
-#                  function(pkg) if (!requireNamespace(pkg, quietly = TRUE)) 
-#                    install.packages(pkg)))
-# 
-# # Load libraries
-# invisible(lapply(required_packages, library, character.only = TRUE))
-# 
-# data_clean <- readRDS("data/data_clean.rds")
-# 
-# # Source functions
-# source('./R/functions/buffer_subsampling.R')
-# source("./R/functions/calculate_Info.R")
-# 
-# 
-# # 0.2 data cleaning
-# # Filter out missing values
-# selected_columns <- c("occurrence_no", 
-#                       "reference_no",
-#                       "collection_no", 
-#                       "genus", 
-#                       "lat", 
-#                       "lng",
-#                       "max_ma",
-#                       "min_ma", 
-#                       "early_interval", 
-#                       "late_interval",
-#                       "paleomodel2",
-#                       "paleolng2", 
-#                       "paleolat2")
-# 
-# source("./R/01_LDG_calculation.R")
+rich_params <- list(
+  # Minimum required cells for both Northern and Southern regions. If both exceed this value, the time bin is labeled "good", otherwise "bad".
+  threshold = 5
+  
+)
