@@ -41,7 +41,7 @@ params <- list(
   # Which Global Plate Models should be used?
   models = c("PALEOMAP"),
   # Which spacing should be used for spatial binning (in km)?
-  spacing = 1000,
+  spacing = 250,
   # Whether to clean the data again depends on the situation.
   clean_again = FALSE,
   # Coordinate reference system, default is WGS84
@@ -55,12 +55,8 @@ params <- list(
   # Desired sample coverage level (e.g., 0.7 = 70% of species expected to be detected)
   level = 0.7, 
   # Number of bootstrap replicates for confidence intervals; 0 means no bootstrapping
-  nboot = 50，
+  nboot = 50,
   notify = TRUE
 )
 
-rich_params <- list(
-  # Minimum required cells for both Northern and Southern regions. If both exceed this value, the time bin is labeled "good", otherwise "bad".
-  threshold = 5
-  
-)
+

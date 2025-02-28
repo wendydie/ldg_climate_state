@@ -108,3 +108,160 @@ rich_info_summary <- rich.infodf.all %>%
       ci_upper = ~ mean(.) + 1.96 * sd(.) / sqrt(n())
     ), .names = "{.col}_{.fn}")
   )
+
+
+
+# Manually create facet labels for Northern and Southern slopes
+facet_labels <- data.frame(
+  slope_type = c("Southern slope", "Northern slope"),
+  x_label = 20,  # Rightmost position
+  y_label = y_max_val * 0.85  # Position below max Y
+)
+
+# Create the slope variation curve plot
+slope_vTime_plot <- ggplot() +
+  # climate state color bars (Legend bar)
+  geom_rect(data = climate_legend, 
+            aes(xmin = min_ma, xmax = max_ma, ymin = y*0.8, ymax=y*0.85),
+            fill = climate_legend$climate_color) +  # Control bar size
+  # Add "Cooler Climate" & "Warmer Climate" labels
+  geom_text(aes(x = 355, y = y_max_val*0.8, label = "Cooler climate"), 
+            size = 3, hjust = 1) +
+  geom_text(aes(x = 270, y = y_max_val*0.8, label = "Warmer climate"), 
+            size = 3, hjust = 0) +
+  geom_rect(data = climate_states,
+            aes(xmin = top, xmax = bottom, 
+                ymin = y_max_val*0.9, ymax = y_max_val),
+            fill = climate_states$climate_color,
+            linewidth = 0.3) +
+  # Add geological system color bands
+  geom_rect(data = system_labels,
+            aes(xmin = min_ma, xmax = max_ma, 
+                ymin = y_min_val*0.9, ymax = y_min_val),
+            fill = system_labels$fill_color,
+            color = "black",
+            linewidth = 0.3) +  
+  # Add geological stage color bands
+  geom_rect(data = time_bins,
+            aes(xmin = min_ma, xmax = max_ma, 
+                ymin = y_min_val*0.9, ymax = y_min_val*0.85),
+            fill = time_bins$stageCol,
+            color = "black",
+            linewidth = 0.2) +
+  # Remove fill color legend (to avoid redundancy)
+  guides(fill = "none") +  
+  # Add slope curves (different types)
+  geom_line(data = slope_data, aes(x = bin_midpoint, y = slope_value, color = slope_type), linewidth = 1) +
+  geom_point(data = slope_data, aes(x = bin_midpoint, y = slope_value, color = slope_type), size = 2) +
+  # Add a black border, enclosing only the data range
+  geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val), 
+            color = "black", fill = NA, linewidth = 1) +
+  geom_hline(yintercept = 0, color="black", linewidth=0.8) + 
+  # Customize colors
+  scale_color_manual(
+    values = c("southern_slope" = "#E69F00", 
+               "northern_slope" = "#0072B2"),
+    labels = c("Southern slope", "Northern slope")
+  ) +
+  # Adjust x and y axis ranges
+  scale_x_reverse(
+    name = "Geological time (Ma)",
+    limits = c(x_max_val, 0),  # Explicitly set limits to ensure alignment
+    breaks = seq(500, 0, -50),
+    expand = c(0, 0)  # Avoid extra whitespace
+  ) +
+  scale_y_continuous(limits = c(y_min_val, y_max_val),
+                     expand = c(0, 0)                 # Disable axis expansion
+  ) +
+  # Add geological system names above the color bands
+  geom_text(
+    data = system_labels, 
+    aes(x = mid_ma, y = y_text_pos, label = system),  # Use system names and computed midpoints
+    angle = 0, 
+    vjust = 0.5,      # Vertically centered
+    hjust = 0.5,      
+    size = 3
+  ) +
+  # Legends and labels
+  labs(
+    title = "Slopes of LDGs over geological time",
+    x = "Geological time (Ma)",
+    y = "Slope value",
+    color = "Slope Type"
+  ) +
+  # Improve aesthetics using a clean theme
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.position = "top",
+    axis.ticks.y = element_line(color = "black", linewidth = 0.5),
+    axis.line.y = element_line(color = "black", linewidth = 0.5)
+  ) 
+
+# Save the plot as an image file
+# ggsave("./figures/LDG slopes through geological time.jpg", slope_vTime_plot, width = 8, height = 5, dpi = 300)
+# Display the plot
+print(slope_vTime_plot)
+
+
+### 3.4 vilion figure--------------------------------------------------------
+# Convert data to long format and remove missing values (NA)
+slope_melt <- slope_data %>%
+  select(climate_state, slope_value, slope_type, everything()) %>%  # Ensure correct order
+  rename(Slope_Value = slope_value, Slope_Type = slope_type) %>%  # Rename for consistency
+  na.omit()  # Remove NA values
+
+
+# Reorder the factor levels of climate_state
+slope_melt$climate_state <- factor(slope_melt$climate_state, levels = climate_levels)
+
+# Compute the total sample count for each climate state (combining all slope types)
+sample_counts <- slope_cli_df_filter %>%
+  select(climate_state, bin_midpoint) %>%
+  group_by(climate_state) %>%  # Group only by climate state
+  summarise(count = n(), .groups = "drop") %>%
+  mutate(label = paste0("n=", count))  # Format label for display
+
+# Adjust Y-axis position for text labels (using a fixed offset)
+label_y_pos <- max(slope_melt$Slope_Value, na.rm = TRUE) + 0.01
+
+# Create the violin plot with adjustments
+violin_plot <- ggplot(slope_melt, aes(x = climate_state, y = Slope_Value, fill = Slope_Type)) +
+  geom_violin(trim = FALSE, alpha = 0.6) +  # Violin plot without trimming
+  geom_boxplot(width = 0.1, position = position_dodge(0.9), outlier.shape = NA) +  # Overlay boxplot with no outliers
+  # Add total sample count labels (centered above the violins)
+  geom_text(
+    data = sample_counts,
+    aes(x = climate_state, y = label_y_pos, label = label),  # Use a fixed Y position
+    inherit.aes = FALSE,  # Do not inherit fill mapping from Slope_Type
+    size = 4,
+    color = "black",
+    vjust = -0.5  # Slight vertical adjustment
+  ) +
+  # Apply minimal theme
+  theme_minimal() +
+  labs(
+    title = "Distribution of LDG slopes by climate state",
+    x = "Climate state",
+    y = "Slope calue",
+    fill = "Slope type"
+  ) +
+  # Customize text and border styles
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"), 
+    axis.title = element_text(size = 14),                             
+    axis.text = element_text(size = 12),                              
+    legend.title = element_text(size = 14),                         
+    legend.text = element_text(size = 12),                         
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 1)
+  )
+
+# Save the violin plot as an image
+# ggsave("./figures/LDG slope in climate states violin plot.jpg", violin_plot, width = 8, height = 5, dpi = 300)
+
+# Display the plot
+print(violin_plot)

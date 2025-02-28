@@ -174,17 +174,6 @@ occdf <- distinct(occdf, lat, lng, family, genus, bin_assignment, collection_no,
 
 # Save processed data
 saveRDS(object = occdf, file = "./data/processed/pbdb_data.RDS")
-
-TAS <- TAS %>%
-  rowwise() %>%
-  mutate(bin_midpoint = if_else(
-    any(time_bins$max_ma >= UpperAge & time_bins$min_ma <= LowerAge),
-    time_bins$mid_ma[which.max(time_bins$max_ma >= UpperAge & time_bins$min_ma <= LowerAge)],
-    NA_real_
-  )) %>%
-  ungroup()
-
-saveRDS(object = TAS, file = "./data/processed/TAS_Scenario8.RDS")
 # Notify
 if (params$notify) {
   beepr::beep(4)
