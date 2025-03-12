@@ -5,6 +5,8 @@ library(reshape2)
 library(dplyr)
 library(tidyr)
 library(purrr)
+library(grid)
+library(patchwork)
 source("./R/options.R")
 
 # Wilcoxon signed-rank test analysis in different climate states-------------------------------
@@ -33,8 +35,9 @@ slope_cli_df <- LDG_slope %>%
   left_join(climate_states, by = c("bin_midpoint" = "mid"))
 
 slope_cli_df_filter <- slope_cli_df[(slope_cli_df$climate_state != ''&
-                                     slope_cli_df$label != 'bad' &
-                                     slope_cli_df$quantile == 'q50' # used the median to do the Wilcoxon signed-rank test
+                                     slope_cli_df$label != 'bad' 
+                                     &
+                                     slope_cli_df$quantile == 'q75' # used the median to do the Wilcoxon signed-rank test
                                      ), ]
 
 # Step 2: Group by climate_state and perform Wilcoxon signed-rank test----------------------
@@ -67,8 +70,8 @@ test_results <- map_df(climate_pairs, function(pair) {
 
 print(test_results)
 
-test_path <- sprintf("./results/%skm test selection of climate states Mrate %s and col is %s.csv", 
-                     params$spacing, rich_params$Mrate_filter_no, rich_params$col_filter_no)
+test_path <- sprintf("./results/%skm %squota %slatitude band test selection of climate states.csv", 
+                     params$spacing, params$level, rich_params$lat_band_width)
 write.csv(test_results, test_path, row.names = FALSE)
 
 # Wilcoxon test results
@@ -105,15 +108,15 @@ wil_results <- map_df(climate_pairs, function(pair) {
 
 print(wil_results)
 
-wilr_path <- sprintf("./results/%skm wilcoxon test pairs of climate states Mrate %s and col is %s.csv", 
-                     params$spacing, rich_params$Mrate_filter_no, rich_params$col_filter_no)
+wilr_path <- sprintf("./results/%skm %squota %slatitude band wilcoxon test pairs of climate states.csv", 
+                     params$spacing, params$level, rich_params$lat_band_width)
 write.csv(wil_results, wilr_path, row.names = FALSE)
 
 # Drawing the slope figures of LDG of time-bins in one figure------------
 # Step 1: Prepare the data
 # Ensure final_results contains time-bin (stage) and slopes for southern, and northern groups
 slope_data <- slope_cli_df %>%
-  filter(quantile == 'q50') %>%
+  filter(quantile == 'q75') %>%
   mutate(
     slope_type = case_when(
       hemisphere == "Northern" ~ "Northern",
@@ -162,9 +165,20 @@ climate_labels <- data.frame(
   hjust = c(1,0)
 )
 
+# Calculate label positions for each facet
+facet_labels <- slope_data %>%
+  group_by(slope_type) %>%
+  summarise(
+    x_label = max(bin_midpoint) - 10,  # Position label slightly to the right
+    y_label = y_max_val * 0.83   # Position label near the top
+  ) %>%
+  mutate(label = c("A", "B"))  # Assign labels "A" and "B" manually
+
 slope_vTime_plot <- ggplot(slope_data, aes(x = bin_midpoint, y = slope_value, color = slope_type)) +
   # Add slope curves for different types
   geom_line(linewidth = 1) +
+  # **Use geom_smooth() for smoother lines**
+  # geom_smooth(method = "loess", se = FALSE, linewidth = 1.2, span = 0.3) +  # Loess smoothing
   geom_point(size = 2) +
   # Add climate state color bars (ONLY in the first facet)
   geom_rect(data = climate_legend, 
@@ -230,6 +244,11 @@ slope_vTime_plot <- ggplot(slope_data, aes(x = bin_midpoint, y = slope_value, co
                         y_label = y_max_val*0.85),  # Position above max slope
             aes(x = x_label, y = y_label, label = slope_type),
             hjust = 1, vjust = 1, size = 4, fontface = "bold", inherit.aes = FALSE) +
+  
+  # **Add labels "A" and "B" inside each facet**
+  geom_text(data = facet_labels, aes(x = x_label, y = y_label, label = label),
+            size = 6, fontface = "bold", inherit.aes = FALSE) +
+  
   # Other aesthetic improvements
   labs(
     x = "Geological Time (Ma)",
@@ -248,9 +267,13 @@ slope_vTime_plot <- ggplot(slope_data, aes(x = bin_midpoint, y = slope_value, co
 # Display the plot
 print(slope_vTime_plot)
 
-sT_path <- sprintf("./figures/%skm time series Mrate is %s col is %s.jpg", 
-                  params$spacing, rich_params$Mrate_filter_no, rich_params$col_filter_no)
-ggsave(sT_path, slope_vTime_plot, width = 8, height = 7, dpi = 300)
+sT_path_jpg <- sprintf("./figures/jpg/%skm %squota %slatitude band time series.jpg", 
+                  params$spacing, params$level, rich_params$lat_band_width)
+ggsave(sT_path_jpg, slope_vTime_plot, width = 8, height = 7, dpi = 300)
+
+sT_path_pdf <- sprintf("./figures/pdf/%skm %squota %slatitude band time series.pdf", 
+                   params$spacing, params$level, rich_params$lat_band_width)
+ggsave(sT_path_pdf, slope_vTime_plot, width = 8, height = 7, dpi = 300)
 
 # Drawing the boxplot of slope of LDG in different climate states--------
 # Filter LDG slope
@@ -265,8 +288,39 @@ sample_counts <- slope_cli_df_filter %>%
   summarise(count = n(), .groups = "drop") %>%
   mutate(label = paste0("n=", count))  # Format label for display
 
-# Draw boxplot
-boxplot <- ggplot(slope_data_filtered, aes(x = climate_state, y = slope_value, fill = slope_type)) +
+# Maximum x-axis position (for the rightmost arrow placement)
+max_x <- max(as.numeric(factor(slope_data_filtered$climate_state))) + 1  
+
+# Define y-axis boundaries
+x_min_val <- min(as.numeric(factor(slope_data_filtered$climate_state))) - 0.5
+x_max_val <- max_x - 0.5  
+y_min_val <- min(slope_data_filtered$slope_value, na.rm = TRUE)
+y_max_val <- max(slope_data_filtered$slope_value, na.rm = TRUE)
+
+# Diamond width (adjust to fit properly)
+arrow_base <- 0.1  
+
+# **Generate gradient data for the diamond**
+num_steps <- 300  
+# **Generate gradient data for the diamond (ensuring y = 0 is the center of the gradient)**
+gradient_diamond <- expand.grid(
+  y = seq(y_min_val, y_max_val, length.out = num_steps), 
+  x = seq(max_x - arrow_base, max_x + arrow_base, length.out = num_steps)
+) %>%
+  mutate(
+    y_center_dist = abs(y),          # Compute y-axis distance from center
+    x_center_dist = abs(x - max_x),  # Compute x-axis distance from center
+    arrow_color = ifelse(y >= 0, y / y_max_val, -y / y_min_val)   # Normalize color: center at y = 0
+  ) %>%
+  filter(
+    ifelse(y >= 0, 
+           y_center_dist <= (1 - (x_center_dist / arrow_base)) * y_max_val,  # y > 0
+           y_center_dist <= (1 - (x_center_dist / arrow_base)) * abs(y_min_val)   # y < 0
+    )
+  )
+
+# **Boxplot layer**
+p1 <- ggplot(slope_data_filtered, aes(x = climate_state, y = slope_value, fill = slope_type)) +
   # Boxplot layer
   geom_boxplot(outlier.size = 2, outlier.shape = 21, position = position_dodge(width = 0.75)) + 
   # Jittered points layer - ensuring they are placed within the correct box
@@ -295,7 +349,6 @@ boxplot <- ggplot(slope_data_filtered, aes(x = climate_state, y = slope_value, f
   
   # Labels and titles
   labs(
-    title = "Boxplot of LDG Slopes in Different Climate States",
     x = "Climate state",
     y = "Slope value",
     fill = "Slope type"
@@ -303,19 +356,64 @@ boxplot <- ggplot(slope_data_filtered, aes(x = climate_state, y = slope_value, f
   
   # Minimal theme with some customizations
   theme_minimal() +                                       
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"), 
-    axis.title = element_text(size = 14),                             
-    axis.text = element_text(size = 12),                              
-    legend.title = element_text(size = 14),                         
-    legend.text = element_text(size = 12),                         
-    panel.border = element_rect(color = "black", fill = NA, linewidth = 1)
+  theme(axis.title = element_text(size = 14),                            
+        axis.text = element_text(size = 12),                              
+        legend.title = element_text(size = 12),                         
+        legend.text = element_text(size = 10),                         
+        panel.border = element_rect(color = "black", fill = NA, linewidth = 1),
+        legend.position = c(0.02, 0.98),  # Move legend to top-left inside the plot
+        legend.justification = c(0, 1),  # Align legend's top-left corner
+        legend.background = element_rect(fill = "white", color = "black", linewidth = 0.5),  # Add a background
+        legend.key = element_rect(fill = "white"),  # Keep legend keys clean
+        plot.margin = margin(0, 0, 0, 0)
   )
+
+# **Gradient Diamond (Arrow) Layer**
+# **Gradient Diamond (Arrow) Layer with Border & Aligned Y-Axis**
+p2 <- ggplot() +
+  # **Gradient fill**
+  geom_tile(data = gradient_diamond, aes(x = x, y = y, fill = arrow_color), alpha = 0.8) +
+  # **Draw four border lines around the diamond using geom_segment()**
+  geom_segment(aes(x = max_x - arrow_base, xend = max_x, y = 0, yend = min(gradient_diamond['y'])), color = "gray", linewidth = 1) +  # Left lower edge
+  geom_segment(aes(x = max_x, xend = max_x + arrow_base, y = min(gradient_diamond['y']), yend = 0), color = "gray", linewidth = 1) +  # Right lower edge
+  geom_segment(aes(x = max_x - arrow_base, xend = max_x, y = 0, yend = y_max_val), color = "gray", linewidth = 1) +  # Left upper edge
+  geom_segment(aes(x = max_x, xend = max_x + arrow_base, y = max(gradient_diamond['y']), yend = 0), color = "gray", linewidth = 1) +  # Right upper edge
+  geom_rect(aes(xmin = max_x + arrow_base* 1.5, xmax = max_x + arrow_base* 1.7, ymin =min(gradient_diamond['y']), ymax = max(gradient_diamond['y'])), 
+            fill = "white", alpha = 0.8, color = NA) +  
+  # **Gradient color from red → white → blue**
+  scale_fill_gradientn(name = "Gradient", colors = c("#d73027", "#ffffff", "#4575b4")) +
+  
+  # **Force y-axis to match p1**
+  scale_y_continuous(limits = c(y_min_val, y_max_val)) +
+  
+  # **Text labels for arrows**
+  annotate("text", x = max_x + arrow_base* 1.5, y = y_max_val * 0.5, label = "Weaker LDG", 
+           color = "black", size = 4, fontface = "bold", angle = 90) +
+  annotate("text", x = max_x + arrow_base* 1.5, y = y_min_val * 0.5, label = "Stronger LDG", 
+           color = "black", size = 4, fontface = "bold", angle = 90) +
+  
+  # **Theme adjustments**
+  theme_void() + 
+  theme(
+    legend.position = "none",
+    axis.text.y = element_blank(),  # Hide y-axis text
+    axis.ticks.y = element_blank(),  # Hide y-axis ticks
+    plot.margin = margin(0, 10, 10, 10)
+  )
+
+
+# **Combine boxplot (p1) and gradient diamond (p2)**
+boxplot <- p1 + p2 + plot_layout(ncol = 2, widths = c(8, 1))  # 2/3 for p1, 1/3 for p2
 
 # Save and display
 print(boxplot)
-bT_path <- sprintf("./figures/%skm boxplot Mrate %s and col is %s.jpg", 
-                   params$spacing, rich_params$Mrate_filter_no, rich_params$col_filter_no)
-ggsave(bT_path, boxplot, width = 8, height = 5, dpi = 300)
+
+# Save high-resolution versions
+bT_path_jpg <- sprintf("./figures/jpg/%skm %squota %slatitude band boxplot.jpg", 
+                       params$spacing, params$level, rich_params$lat_band_width)
+bT_path_pdf <- sprintf("./figures/pdf/%skm %squota %slatitude band boxplot.pdf", 
+                       params$spacing, params$level, rich_params$lat_band_width)
+ggsave(bT_path_jpg, boxplot, width = 8, height = 5, dpi = 300)
+ggsave(bT_path_pdf, boxplot, width = 8, height = 5, dpi = 300)
 
 

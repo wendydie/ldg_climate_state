@@ -1,0 +1,136 @@
+# Load required libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+source("./R/options.R")
+# Read the dataset
+rich_df <- read.csv(sprintf("./results/LDG/%s_cell_%s_richness.csv", 
+                            params$spacing, params$level))
+time_bins <- readRDS("./data/time_bins.RDS")  # Load time bin information
+
+# Step 1: Data Processing --------------------------------------------------
+# Only keep data where bin_midpoint < 486.85 (to match climate state data)
+rich_df$stage <- time_bins$interval_name[match(rich_df$bin_midpoint, time_bins$mid_ma)]
+rich_df <- rich_df %>%
+  filter(bin_midpoint < 486.8500) %>%
+  mutate(bin_midpoint = factor(bin_midpoint, levels = sort(unique(bin_midpoint), decreasing = TRUE)))
+
+# Classify cells as "Incomplete" or "Complete"
+rich_df <- rich_df %>%
+  mutate(completeness = ifelse(nT >= 5 & t <= 2 * nT, "Incomplete", "Complete"))
+
+# Convert latitude to absolute values and classify hemispheres
+rich_df <- rich_df %>%
+  mutate(abs_lat = abs(cell_lat))
+# Convert latitude to absolute values and classify hemispheres.
+rich_df <- rich_df %>%
+  mutate(
+    abs_lat = abs(cell_lat),  # Convert latitude to absolute value
+    hemisphere = case_when(
+      cell_lat >= 0 ~ "Northern",  # good cells & cell_lat >= 0 → Northern
+      cell_lat < 0 ~ "Southern"  # good cells & cell_lat < 0 → Southern
+    ))
+# Divide the cells into 30-degree latitude bands for completeness
+rich_df <- rich_df %>%
+  mutate(lat_band_mid = (floor(abs_lat / 30) * 30) + (30 / 2))
+
+#Extract only "Complete" data for good/bad completeness
+rich_df_complete <- rich_df %>% filter(completeness == "Complete")
+
+#Determine "good" or "bad" using only Complete data
+rich_df_complete <- rich_df_complete %>%
+  group_by(bin_midpoint, hemisphere) %>%
+  mutate(
+    label = case_when(
+      all(c(15, 45) %in% lat_band_mid) ~ "good",  # If both 15 and 45 exist → "good"
+      TRUE ~ "bad"
+    )
+  ) %>%
+  ungroup()
+
+# Merge "good/bad" completeness back into full dataset (including Incomplete)
+rich_df2 <- left_join(rich_df, rich_df_complete %>% select(bin_midpoint, cell, hemisphere, label), 
+                     by = c("bin_midpoint", 'cell', "hemisphere"))
+# Fill NA labels based on bin_midpoint & hemisphere
+rich_df2 <- rich_df2 %>%
+  group_by(bin_midpoint, hemisphere) %>%
+  mutate(label = ifelse(is.na(label), 
+                        ifelse("good" %in% label, "good", "bad"),  # If any "good" exists, set all as "good", else "bad"
+                        label)) %>%
+  ungroup()
+# Reorder completeness so "Complete" is at the bottom
+rich_df2$completeness <- factor(rich_df2$completeness, levels = c("Incomplete", "Complete"))
+# Prepare text annotation data (only for bad hemisphere)
+bad_labels <- rich_df2 %>%
+  select(bin_midpoint, cell_lat, hemisphere, label) %>%
+  mutate(
+    text_x = ifelse(hemisphere == "Northern", 45, -45),
+    text_y = Inf  # Use Inf to place label at the top of each facet
+  ) %>%
+  filter(label == "bad") %>%
+  distinct(bin_midpoint, hemisphere, text_x, text_y, label)
+
+# Define hemisphere-specific background color
+rich_df2 <- rich_df2 %>%
+  mutate(bg_color = ifelse(label == "bad", "gray90", NA))  # Mark bad hemisphere
+
+# Step 3: Plot Stacked Proportional Bar Chart ------------------------------
+stacked_bar_plot <- ggplot(rich_df2, aes(x = cell_lat, fill = completeness)) +
+  # Add a background rectangle for "bad" hemisphere bins
+  geom_rect(data = rich_df2 %>% filter(label == "bad" & hemisphere == "Northern"), 
+            aes(xmin = 0, xmax = 90, ymin = -Inf, ymax = Inf), 
+            fill = "gray90", alpha = 0.3, inherit.aes = FALSE) +  
+  geom_rect(data = rich_df2 %>% filter(label == "bad" & hemisphere == "Southern"), 
+            aes(xmin = -90, xmax = 0, ymin = -Inf, ymax = Inf), 
+            fill = "gray90", alpha = 0.3, inherit.aes = FALSE) +  
+  # Add "Bad" text labels in bad hemispheres
+  geom_text(data = bad_labels, aes(x = text_x, y = text_y, label = "Bad"), 
+            color = "red", size = 3, fontface = "bold", vjust =1.5, inherit.aes = FALSE) +
+  # Histogram
+  geom_histogram(binwidth = 5, position = "stack", color = "black", linewidth = 0.3) +  
+  # Define colors for Complete and Incomplete data
+  scale_fill_manual(values = c("Incomplete" = "#F0E442","Complete" = "#009E73" )) +  
+  # Equator & Baseline Lines
+  geom_vline(xintercept = 0, color = "red", linetype = "solid", linewidth = 1) +  
+  # Axis Labels
+  labs(x = "Latitude",
+       y = "Cell Count",
+       fill = "Completeness") +
+  # Facet by 'stage' (bin_midpoint), sorted in descending order
+  facet_wrap(~ bin_midpoint,
+             labeller = as_labeller(function(x) paste0(rich_df2$stage[match(x, rich_df2$bin_midpoint)])),
+             nrow = 15, ncol = 6, scales = "free_y") +  
+  # Keep x-axis strictly within [-90, 90] with ticks every 30 degrees
+  scale_x_continuous(limits = c(-90, 90), breaks = seq(-90, 90, 30), expand = c(0, 0)) +  
+  # Ensure Y-axis always has 4 labels (0, 1/3 max, 2/3 max, max)
+  scale_y_continuous(
+    breaks = function(y) {
+      max_val <- ceiling(max(y, na.rm = TRUE) / 10) * 10  # Round up to nearest 10
+      breaks <- seq(0, max_val, length.out = 5)  # Generate 5 evenly spaced breaks
+      return(unique(round(breaks)))  # Ensure all breaks are integers
+    }
+  ) +
+  # Improve theme appearance
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 8, face = "bold", margin = margin(1,1,1,1)),  
+    strip.placement = "inside",  
+    panel.spacing = unit(0.01, "lines"),  
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 1),  
+    panel.grid = element_blank(),  
+    axis.text.x = element_text(size = 8, color = "black"),  
+    axis.title.x = element_text(size = 12, color = "black"),  
+    axis.text.y = element_text(size = 8, color = "black"),  
+    axis.title.y = element_text(size = 12, color = "black", angle = 90),
+    panel.background = element_rect(fill = "white"),
+    # Adjust legend position and spacing
+    legend.position = 'bottom',
+    legend.margin = margin(-5, 0, 0, 0, unit = "pt"),  # Reduce top margin
+    legend.spacing.y = unit(-3, "pt"),  # Reduce spacing between legend items
+    legend.key.height = unit(5, "pt")  # Make legend more compact
+  )
+
+# Save and display plot
+print(stacked_bar_plot)
+ggsave(sprintf("./figures/%s_km_%s_quota_completeness_histogram.jpg", 
+               params$spacing, params$level), stacked_bar_plot, width = 8, height = 8, dpi = 300)

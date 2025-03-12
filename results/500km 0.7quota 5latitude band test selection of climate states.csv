@@ -1,0 +1,11 @@
+"group1","group2","normal","test_type","shapiro_p1","shapiro_p2"
+"Hothouse","Coolhouse",FALSE,"Wilcoxon",1.38025490986169e-05,0.00440951505629177
+"Hothouse","Transitional",FALSE,"Wilcoxon",1.38025490986169e-05,0.121963943751365
+"Hothouse","Warmhouse",FALSE,"Wilcoxon",1.38025490986169e-05,0.361191434669575
+"Hothouse","Coldhouse",FALSE,"Wilcoxon",1.38025490986169e-05,0.761375522684991
+"Coolhouse","Transitional",FALSE,"Wilcoxon",0.00440951505629177,0.121963943751365
+"Coolhouse","Warmhouse",FALSE,"Wilcoxon",0.00440951505629177,0.361191434669575
+"Coolhouse","Coldhouse",FALSE,"Wilcoxon",0.00440951505629177,0.761375522684991
+"Transitional","Warmhouse",TRUE,"t-test",0.121963943751365,0.361191434669575
+"Transitional","Coldhouse",TRUE,"t-test",0.121963943751365,0.761375522684991
+"Warmhouse","Coldhouse",TRUE,"t-test",0.361191434669575,0.761375522684991
