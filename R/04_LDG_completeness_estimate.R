@@ -1,9 +1,17 @@
+# Header ----------------------------------------------------------------
+# Project: LDG_climate_state
+# File name: 04_LDG_completeness_estimate.R
+# Last updated: 2025-01-21
+# Author: Lewis A. Jones; Die (Wendy) Wen
+# Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
+# Repository: https://github.com/wendydie/LDG_climate_state
+# -----------------------------------------------------------------------
 # Load required libraries
 library(ggplot2)
 library(dplyr)
 library(tidyr)
 source("./R/options.R")
-# Read the dataset
+# Read the dataset----------------------------------------------------------
 rich_df <- read.csv(sprintf("./results/LDG/%s_cell_%s_richness.csv", 
                             params$spacing, params$level))
 time_bins <- readRDS("./data/time_bins.RDS")  # Load time bin information

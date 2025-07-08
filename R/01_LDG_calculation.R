@@ -1,6 +1,12 @@
-# Wendy geowendywen@outlook.com
-
-
+# Header ----------------------------------------------------------------
+# Project: LDG_climate_state
+# File name: 01_LDG_calculation.R
+# Last updated: 2025-01-21
+# Author: Lewis A. Jones; Die (Wendy) Wen
+# Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
+# Repository: https://github.com/wendydie/LDG_climate_state
+# -----------------------------------------------------------------------
+# Load libraries and options --------------------------------------------
 library(dplyr)
 library(dggridR)
 library(iNEXT)
@@ -27,7 +33,7 @@ occdf$cell_lng <- cellcenter$lon_deg
 occdf$cell_lat <- cellcenter$lat_deg
 
 cell_xy <- unique(occdf[c('cell', 'cell_lng', 'cell_lat')])
-#iNEXT ------------------------------------------------------------------
+#iNEXT 
 # temporal-spatial binning
 occdf$tsbin <- paste0(occdf$bin_midpoint, '_', occdf$cell)
 occdf_list <- lapply(unique(occdf$bin_assignment), function(i) subset(occdf, bin_assignment == i))

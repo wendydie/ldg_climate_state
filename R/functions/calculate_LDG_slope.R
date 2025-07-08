@@ -1,11 +1,11 @@
 
-# Function to calculateOLS slope for LDG using 15-degree bands
+# Function to calculate OLS slope for LDG 
 calculate_slope_stats <- function(df, percentile) {
   df %>%
     group_by(bin_midpoint) %>%
-    filter(n() > 2, length(unique(lat_band_mid_15)) > 1) %>%  # Use 15-degree bands
+    filter(n() > 2, length(unique(abs_lat_bin_mid)) > 1) %>%  
     summarise(
-      model = list(lm(!!sym(percentile) ~ lat_band_mid_15, data = cur_data())), 
+      model = list(lm(!!sym(percentile) ~ abs_lat_bin_mid, data = cur_data())), 
       .groups = "drop"
     ) %>%
     rowwise() %>%

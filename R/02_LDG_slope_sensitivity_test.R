@@ -1,8 +1,17 @@
+# Header ----------------------------------------------------------------
+# Project: LDG_climate_state
+# File name: 02_LDG_slope_sensitivity_test.R
+# Last updated: 2025-01-21
+# Author: Lewis A. Jones; Die (Wendy) Wen
+# Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
+# Repository: https://github.com/wendydie/LDG_climate_state
+# -----------------------------------------------------------------------
+# Load libraries and options --------------------------------------------
 library(ggplot2)
 library(GGally)
 library(dplyr)
 library(tidyr)
-
+# -----------------------------------------------------------------------
 # Define percentiles to analyze
 percentiles <- c("q50", "q60", "q75", "q90", "q95")
 
@@ -13,9 +22,9 @@ compute_slopes <- function(df, richness_column) {
   for (perc in percentiles) {
     slope_data <- df %>%
       group_by(bin_midpoint, hemisphere) %>%
-      filter(n() > 2, length(unique(lat_band_mid_15)) > 1) %>%  # Ensure enough data points
+      filter(n() > 2, length(unique(abs_lat_bin_mid)) > 1) %>%  # Ensure enough data points
       summarise(
-        model = list(lm(!!sym(perc) ~ lat_band_mid_15, data = cur_data())), 
+        model = list(lm(!!sym(perc) ~ abs_lat_bin_mid, data = cur_data())), 
         .groups = "drop"
       ) %>%
       rowwise() %>%
@@ -32,7 +41,7 @@ compute_slopes <- function(df, richness_column) {
   
   return(bind_rows(results))
 }
-
+# -----------------------------------------------------------------------
 # Compute slopes for both qD_normalized and qD
 slope_qD_normalized <- compute_slopes(rich_df, "qD_normalized")
 slope_qD <- compute_slopes(rich_df, "qD")
@@ -40,7 +49,6 @@ slope_qD <- compute_slopes(rich_df, "qD")
 # Combine the percentile (quantile) and richness type (qD or qD_normalized)
 LDG_slope_all <- bind_rows(slope_qD_normalized, slope_qD) %>%
   mutate(slope_type = paste0(quantile, ifelse(richness_type == "qD_normalized", "_Norm", "")))
-
 
 # Convert `slope_type` into wide format for correlation matrix
 slope_data_wide <- LDG_slope_all %>%
@@ -74,12 +82,7 @@ correlation_plot <- ggpairs(
     plot.background = element_blank()  # Ensure no background box for the whole plot
   )
 
-
-
-# Print the correlation plot
-print(correlation_plot)
-
 cor_path <- sprintf("./figures/test/%skm %squota %slatitude band correlation plot.jpg", 
-                    params$spacing, params$level, rich_params$lat_band_width)
+                    params$spacing, params$level, rich_params$n_lat_bins)
 # Save the figure
 ggsave(cor_path, correlation_plot, width = 8, height = 8, dpi = 300)
