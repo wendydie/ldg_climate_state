@@ -7,7 +7,7 @@
 # Repository: https://github.com/wendydie/LDG_climate_state
 # -----------------------------------------------------------------------
 rm(list=ls())
-source("./R/04_LDG_completeness_estimate.R")
+# source("./R/04_LDG_completeness_estimate.R")
 
 rich_params <- list(
   # Define the list of percentiles to be calculated

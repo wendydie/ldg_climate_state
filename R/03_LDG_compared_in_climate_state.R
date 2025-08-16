@@ -42,7 +42,11 @@ time_bins <- time_bins %>% filter(min_ma <= 486.8500 & max_ma >= 0)
 
 slope_cli_df <- LDG_slope %>%
   mutate(bin_midpoint = as.numeric(as.character(bin_midpoint))) %>%
-  left_join(climate_states, by = c("bin_midpoint" = "mid"))
+  full_join(climate_states, by = c("bin_midpoint" = "mid"))
+
+slope_cli_path <- sprintf("./results/%skm %squota %s equal-area latitude bins LDG slope and climate states.csv", 
+                     params$spacing, params$level, rich_params$n_lat_bins)
+write.csv(slope_cli_df, slope_cli_path, row.names = FALSE)
 
 slope_cli_df_filter <- slope_cli_df[(slope_cli_df$climate_state != ''&
                                      slope_cli_df$label != 'bad' 
@@ -137,8 +141,8 @@ slope_data <- slope_cli_df %>%
   )
 
 # -- 2. Define axis ranges and theme -----------------------
-x_max_val <- max(time_bins$min_ma) 
-x_min_val <- min(time_bins$max_ma) 
+x_max_val <- max(time_bins$max_ma) 
+x_min_val <- min(time_bins$min_ma) 
 
 y_min_val <- min(slope_data$slope_value, na.rm = TRUE) * 1.3
 y_max_val <- max(slope_data$slope_value, na.rm = TRUE) *1.3
@@ -164,12 +168,18 @@ climate_labels <- data.frame(
 # -- 3. Draw the figure ----------------------------------
 P_north <- ggplot(filter(slope_data, slope_type == "Northern"), 
                   aes(x = bin_midpoint, y = slope_value, color = slope_type)) +
+  # Fill the "near zero" range from -0.1 to 0.1 with a light blue rectangle
+  annotate("rect",
+           xmin = -Inf, xmax = Inf,
+           ymin = -0.1, ymax = 0.1,
+           fill = "lightblue", alpha = 0.3) +
   # Add slope curves for different types
   geom_line(linewidth = 1) +
-  geom_point(size = 2) +
+  geom_point(aes(shape = abs(slope_value) < 0.1), size = 2) +
+  scale_shape_manual(values = c(`TRUE` = 1, `FALSE` = 16)) +
   # Add climate state color bars
   geom_rect(data = climate_states, 
-            aes(xmin = top, xmax = bottom, 
+            aes(xmin = bottom, xmax = top, 
                 ymin = y_max_val*0.9, 
                 ymax = y_max_val *1.02, 
                 fill = climate_color),
@@ -179,7 +189,7 @@ P_north <- ggplot(filter(slope_data, slope_type == "Northern"),
   # Add a black border, enclosing only the data range
   geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val*1.02), 
             color = "black", fill = NA, linewidth = 1) +
-  geom_hline(yintercept = 0, color="black", linewidth=0.8) + 
+  geom_hline(yintercept = 0, color="black", linewidth=0.8, linetype = "dashed") + 
   # Set x and y axis ranges
   scale_x_reverse(
     name = "Geological time (Ma)",
@@ -205,7 +215,7 @@ P_north <- ggplot(filter(slope_data, slope_type == "Northern"),
   )+
   # annotate ("text", x = 540, y = y_max_val*0.85,label="A",
   #           size = 4, fontface = "bold")+
-  annotate ("text", x = 80, y = y_max_val*0.85,label="Northern Hemishphere",
+  annotate ("text", x = 80, y = y_max_val*0.85,label="Northern Hemisphere",
             size = 4, fontface = "bold")+
   theme_minimal() +
   theme(
@@ -222,13 +232,21 @@ P_north <- ggplot(filter(slope_data, slope_type == "Northern"),
     legend.title = element_text(size = 12, face = "bold"),  # Customize legend title
     legend.text = element_text(size = 10)  # Customize legend text
   )
+
 P_south <- ggplot(filter(slope_data, slope_type == "Southern"), 
              aes(x = bin_midpoint, y = slope_value, color = slope_type)) +
+  # Fill the "near zero" range from -0.1 to 0.1 with a light blue rectangle
+  annotate("rect",
+           xmin = -Inf, xmax = Inf,
+           ymin = -0.1, ymax = 0.1,
+           fill = "lightblue", alpha = 0.3) +
   # Add slope curves for different types
   geom_line(linewidth = 1) +
   # **Use geom_smooth() for smoother lines**
   # geom_smooth(method = "loess", se = FALSE, linewidth = 1.2, span = 0.3) +  # Loess smoothing
-  geom_point(size = 2) +
+  
+  geom_point(aes(shape = abs(slope_value) < 0.1), size = 2) +
+  scale_shape_manual(values = c(`TRUE` = 1, `FALSE` = 16)) +
   # geom_rect(data = climate_legend, 
   #           aes(xmin = min_ma, xmax = max_ma, ymin = y * 0.8, ymax = y * 0.85, fill = climate_color),
   #           inherit.aes = FALSE) +
@@ -241,7 +259,7 @@ P_south <- ggplot(filter(slope_data, slope_type == "Southern"),
   # Add a black border, enclosing only the data range
   geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val), 
             color = "black", fill = NA, linewidth = 1) +
-  geom_hline(yintercept = 0, color="black", linewidth=0.8) + 
+  geom_hline(yintercept = 0, color="black", linewidth=0.8, linetype = "dashed") + 
   # Set x and y axis ranges
   scale_x_reverse(
     limits = c(x_max_val, 0),
@@ -265,7 +283,7 @@ P_south <- ggplot(filter(slope_data, slope_type == "Southern"),
   ) +
   # annotate ("text", x = 540, y = y_max_val*0.85,label="B",
   #           size = 4, fontface = "bold")+
-  annotate ("text", x = 80, y = y_max_val*0.85,label="Southern Hemishphere",
+  annotate ("text", x = 80, y = y_max_val*0.85,label="Southern Hemisphere",
             size = 4, fontface = "bold")+
   coord_geo(
     xlim = c(x_max_val, 0),
@@ -321,15 +339,27 @@ ggsave(sT_path_pdf, slope_vTime_plot, width = 8, height = 7, dpi = 300)
 # Drawing the boxplot of slope of LDG in different climate states---------
 # Filter LDG slope
 slope_data_filtered <- slope_data %>%
+  drop_na() %>%
   filter(climate_state %in% climate_levels) %>%
   mutate(climate_state = factor(climate_state, levels = climate_levels))
 
 # Compute the total sample count for each climate state (combining all slope types)
-sample_counts <- slope_cli_df_filter %>%
+sample_counts <- slope_data_filtered %>%
   select(climate_state, bin_midpoint) %>%
   group_by(climate_state) %>%  # Group only by climate state
   summarise(count = n(), .groups = "drop") %>%
   mutate(label = paste0("n=", count))  # Format label for display
+
+state_n_labels <- sample_counts %>%
+  mutate(
+    state_with_n = paste0(climate_state, "\n(n=", count, ")"),
+    climate_state = factor(climate_state, levels = climate_levels)
+  ) %>%
+  arrange(climate_state)
+
+slope_data_filtered <- slope_data_filtered %>%
+  left_join(state_n_labels[, c("climate_state", "state_with_n")], by = "climate_state") %>%
+  mutate(state_with_n = factor(state_with_n, levels = state_n_labels$state_with_n))
 
 # Maximum x-axis position (for the rightmost arrow placement)
 max_x <- max(as.numeric(factor(slope_data_filtered$climate_state))) + 1  
@@ -341,26 +371,21 @@ y_min_val <- min(slope_data_filtered$slope_value, na.rm = TRUE)
 y_max_val <- max(slope_data_filtered$slope_value, na.rm = TRUE)
 
 # **Boxplot layer**
-p1 <- ggplot(slope_data_filtered, aes(x = climate_state, y = slope_value, fill = slope_type)) +
+boxplot <- ggplot(slope_data_filtered, aes(x = state_with_n, y = slope_value, fill = slope_type)) +
+  # Fill the "near zero" range from -0.1 to 0.1 with a light blue rectangle
+  annotate("rect",
+           xmin = -Inf, xmax = Inf,
+           ymin = -0.1, ymax = 0.1,
+           fill = "lightblue", alpha = 0.3) +
   # Boxplot layer
-  geom_boxplot(outlier.size = 2, outlier.shape = 21, position = position_dodge(width = 0.75)) + 
+  geom_hline(yintercept = 0, color = "black", linewidth = 0.8,linetype = "dashed") + 
+  geom_boxplot(outlier.size = 1.8, outlier.shape = 23, position = position_dodge(width = 0.75)) + 
   # Jittered points layer - ensuring they are placed within the correct box
   geom_jitter(aes(fill = slope_type),  # Ensure jitter uses correct fill colors
-              color = "gray",  # Use black border for points to differentiate them
+              # color = "gray",  # Use black border for points to differentiate them
+              shape=21,
               position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.75), 
               size = 1, alpha = 0.6) + 
-  # Add total sample count labels (centered above the violins)
-  geom_text(
-    data = sample_counts,
-    aes(x = climate_state, y = y_min_val, label = label),  # Use a fixed Y position
-    inherit.aes = FALSE,  # Do not inherit fill mapping from Slope_Type
-    size = 4,
-    color = "black",
-    vjust = -0.5  # Slight vertical adjustment
-  ) +
-  
-  geom_hline(yintercept = 0, color = "black", linewidth = 0.8) + 
-  
   # Customizing colors for boxplot and jitter points
   scale_fill_manual(
     values = c("Northern" = "#0072B2",  # Blue for Northern slope
@@ -370,41 +395,26 @@ p1 <- ggplot(slope_data_filtered, aes(x = climate_state, y = slope_value, fill =
   
   # Labels and titles
   labs(
-    x = "Climate state",
-    y = "Slope value",
-    fill = "Slope type"
-  ) +
-  
+    x = "Climate state", y = "Slope value", fill = "Hemisphere"
+  )  +
   # Minimal theme with some customizations
   theme_minimal() +                                       
   theme(axis.title = element_text(size = 14),                            
         axis.text = element_text(size = 12),                              
         legend.title = element_text(size = 12),                         
         legend.text = element_text(size = 10),                         
-        panel.border = element_rect(color = "black", fill = NA, linewidth = 1),
+        panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
         legend.position = c(0.02, 0.98),  # Move legend to top-left inside the plot
         legend.justification = c(0, 1),  # Align legend's top-left corner
         legend.background = element_rect(fill = "white", color = "black", linewidth = 0.5),  # Add a background
         legend.key = element_rect(fill = "white"),  # Keep legend keys clean
-        plot.margin = margin(0, 0, 0, 0)
-  )
-
-p2 <- ggplot() + 
-  geom_polygon(aes(x = c(0, 0.5, 1), y = c(1, 3, 1)), fill = "#4575b4") +
-  annotate("text", x = 1.6, y = 1.5, label = "Increasing\nrichness\nwith latitude", hjust = 0, size = 3.2) +
-  
-  geom_rect(aes(xmin = 0, xmax = 1, ymin = -0.5, ymax = 0.5), fill = "#4575b4") +
-  annotate("text", x = 1.6, y = 0, label = "No richness\nchange \nwith latitude", hjust = 0, size = 3.2) +
-  
-  geom_polygon(aes(x = c(0, 0.5, 1), y = c(-1, -3.0, -1)), fill = "#4575b4") +
-  annotate("text", x = 1.6, y = -1.5, label = "Decreasing\nrichness\nwith latitude", hjust = 0, size = 3.2) +
-  
-  xlim(c(0, 3)) + ylim(c(-3.5, 3.0)) +
-  theme_void()
-
-
-# **Combine boxplot (p1) and gradient diamond (p2)**
-boxplot <- p1 + p2 + plot_layout(ncol = 2, widths = c(8, 3))  # 2/3 for p1, 1/3 for p2
+        plot.margin = margin(10, 30, 10, 10)
+  ) +
+  coord_cartesian(clip = 'off',xlim = c(1, 5), ylim = c(y_min_val,y_max_val)) +
+  annotate("text", x = 5.75, y = (y_max_val + 0.1) / 2, label = "Non-modern-type", 
+           vjust = 0.5, hjust = 0.5, size = 4.5, angle = 90) +
+  annotate("text", x = 5.75, y = (y_min_val - 0.1) / 2, label = "Modern-type", 
+           vjust = 0.5, hjust = 0.5, size = 4.5, angle = 90)
 
 # Save and display
 print(boxplot)
@@ -414,5 +424,5 @@ bT_path_jpg <- sprintf("./figures/jpg/%skm %squota %s equal-area latitude bins b
                        params$spacing, params$level, rich_params$n_lat_bins)
 bT_path_pdf <- sprintf("./figures/pdf/%skm %squota %s equal-area latitude bins boxplot.pdf", 
                        params$spacing, params$level, rich_params$n_lat_bins)
-ggsave(bT_path_jpg, boxplot, width = 8, height = 5, dpi = 300)
-ggsave(bT_path_pdf, boxplot, width = 8, height = 5, dpi = 300)
+ggsave(bT_path_jpg, boxplot, width = 7, height = 5, dpi = 300)
+ggsave(bT_path_pdf, boxplot, width = 7, height = 5, dpi = 300)

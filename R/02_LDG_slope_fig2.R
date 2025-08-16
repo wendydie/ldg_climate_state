@@ -10,28 +10,10 @@
 library(tidyr)
 # -----------------------------------------------------------------------
 # Convert q50, q60, q75, q90, q95 into long format for faceted plotting
-rich_df <- rich_df %>%
-  group_by(bin_midpoint, hemisphere, abs_lat_bin_mid) %>%
-  mutate(
-    q50 = quantile(qD_normalized, 0.50, na.rm = TRUE),
-    q60 = quantile(qD_normalized, 0.60, na.rm = TRUE),
-    q75 = quantile(qD_normalized, 0.75, na.rm = TRUE),
-    q90 = quantile(qD_normalized, 0.90, na.rm = TRUE),
-    q95 = quantile(qD_normalized, 0.95, na.rm = TRUE)
-  )%>%
-  ungroup()
 df_long <- rich_df %>%
   select(bin_midpoint, abs_lat_bin_mid, q50, q60, q75, q90, q95, color) %>%
   pivot_longer(cols = c(q50, q60, q75, q90, q95), 
                names_to = "quantile", values_to = "richness_value")
-
-# Generate OLS fitted values for visualization, grouped by percentile
-ols_lines <- rich_df %>%
-  select(bin_midpoint, abs_lat_bin_mid, hemisphere, q50, q60, q75, q90, q95) %>%  # Include percentiles
-  pivot_longer(cols = c(q50, q60, q75, q90, q95), names_to = "quantile", values_to = "qD_value") %>%  # Reshape to long format
-  left_join(LDG_slope, by = c("bin_midpoint", "hemisphere", "quantile")) %>%  # Join with slopes based on bin, hemisphere, and quantile
-  mutate(fitted_values = intercept + slope *  abs_lat_bin_mid) %>%  # Compute Theil-Sen fitted values
-  filter(!is.na(fitted_values))  # Remove rows where fitted values could not be computed
 
 # Ensure consistent color mapping
 rich_df <- rich_df %>%
@@ -73,7 +55,7 @@ combined_rich_fig <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized, color =
     linetype = guide_legend(title = "Percentile Fit"),
     shape = guide_legend(title = "Percentiles")
   ) +
-  facet_wrap(~ bin_midpoint,
+  facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
              labeller = as_labeller(function(x) paste0(rich_df$stage[match(x, rich_df$bin_midpoint)])),
              scales = "free_y", ncol = 6) +
   # Facet by bin_midpoint with 8 columns
@@ -109,14 +91,16 @@ com_path  <- sprintf("./figures/LDG_slope_facet_%s_km_%s_quota_%s_equal_area_lat
 ggsave(com_path, combined_rich_fig ,  width = 8, height = 9, dpi = 300)
 
 
-for (bin in unique(rich_df$bin_midpoint)) {
+for (stg in unique(rich_df$stage)) {
   
   df_bin <- rich_df %>% 
-    filter(as.character(bin_midpoint) == as.character(bin), !is.na(color)) %>%
+    filter(stage == stg, !is.na(color)) %>%
     mutate(color = factor(color, levels = c("Northern", "Southern", "Bad hemisphere")))
   
+  bin <- unique(df_bin$bin_midpoint)
+  
   olsl_data_bin <- ols_lines %>% 
-    filter(as.character(bin_midpoint) == as.character(bin), !is.na(color)) %>%
+    filter(stage == stg, !is.na(color)) %>%
     mutate(color = factor(color, levels = c("Northern", "Southern", "Bad hemisphere")))
   
   # Convert q50, q60, q75, q90, q95 into long format
@@ -164,7 +148,7 @@ for (bin in unique(rich_df$bin_midpoint)) {
     ) +
     
     labs(
-      title = sprintf("LDG Slope for Time Bin %s", bin),
+      title = sprintf("LDG Slope for %s (%sMa)", stg, bin),
       x = "Absolute Latitude (°)",
       y = "Generic richness"
     ) +
@@ -178,7 +162,7 @@ for (bin in unique(rich_df$bin_midpoint)) {
       axis.title = element_text(size = 12),
       panel.border = element_rect(color = "black", fill = NA, linewidth = 1)
     )
-  
+  print(p)
   # Save the figure in a new output directory
   output_dir <- sprintf("./figures/LDG_slope_combined/%s km %squota %s equal_area latitude bins", 
                         params$spacing, params$level, rich_params$n_lat_bins)

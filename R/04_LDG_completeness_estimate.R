@@ -15,46 +15,29 @@ source("./R/options.R")
 rich_df <- read.csv(sprintf("./results/LDG/%s_cell_%s_richness.csv", 
                             params$spacing, params$level))
 time_bins <- readRDS("./data/time_bins.RDS")  # Load time bin information
-
+lat_bins <- palaeoverse::lat_bins_area(n = 12) %>% arrange(min)
 # Step 1: Data Processing --------------------------------------------------
 # Only keep data where bin_midpoint < 486.85 (to match climate state data)
 rich_df$stage <- time_bins$interval_name[match(rich_df$bin_midpoint, time_bins$mid_ma)]
 rich_df <- rich_df %>%
-  filter(bin_midpoint < 486.8500) %>%
-  mutate(bin_midpoint = factor(bin_midpoint, levels = sort(unique(bin_midpoint), decreasing = TRUE)))
-
-# Classify cells as "Incomplete" or "Complete"
-rich_df <- rich_df %>%
-  mutate(completeness = ifelse(nT >= 5 & t <= 2 * nT, "Incomplete", "Complete"))
-
-# Convert latitude to absolute values and classify hemispheres
-rich_df <- rich_df %>%
-  mutate(abs_lat = abs(cell_lat))
-# Convert latitude to absolute values and classify hemispheres.
-rich_df <- rich_df %>%
+  filter(bin_midpoint <= 486.8500) %>%
   mutate(
-    abs_lat = abs(cell_lat),  # Convert latitude to absolute value
-    hemisphere = case_when(
-      cell_lat >= 0 ~ "Northern",  # good cells & cell_lat >= 0 → Northern
-      cell_lat < 0 ~ "Southern"  # good cells & cell_lat < 0 → Southern
-    ))
-# Divide the cells into 30-degree latitude bands for completeness
+    completeness = ifelse(nT >= 5 & t <= 2 * nT, "Complete", "Incomplete"),
+    abs_lat = abs(cell_lat),
+    hemisphere = ifelse(cell_lat >= 0, "Northern", "Southern"),
+    lat_band_mid = (floor(abs_lat / 30) * 30) + 15
+  )
+# Create 12 equal-area latitude bands for LDG slope calculation
 rich_df <- rich_df %>%
-  mutate(lat_band_mid = (floor(abs_lat / 30) * 30) + (30 / 2))
-
-#Extract only "Complete" data for good/bad completeness
-rich_df_complete <- rich_df %>% filter(completeness == "Complete")
+  mutate(bin_index = findInterval(cell_lat, vec = c(lat_bins$min, Inf)),
+         bin = lat_bins$bin[bin_index]) %>%
+  left_join(lat_bins %>% select(bin, lat_bin_mid = mid), by = "bin") %>%
+  mutate(abs_lat_bin_mid = abs(lat_bin_mid))  # Midpoints of 12 equal-area latitude bands
 
 #Determine "good" or "bad" using only Complete data
-rich_df_complete <- rich_df_complete %>%
-  group_by(bin_midpoint, hemisphere) %>%
-  mutate(
-    label = case_when(
-      all(c(15, 45) %in% lat_band_mid) ~ "good",  # If both 15 and 45 exist → "good"
-      TRUE ~ "bad"
-    )
-  ) %>%
-  ungroup()
+rich_df_complete <- rich_df %>% 
+  filter(completeness == "Complete")
+rich_df_complete <- has_adjacent_bins (rich_df_complete, lat_bins)
 
 # Merge "good/bad" completeness back into full dataset (including Incomplete)
 rich_df2 <- left_join(rich_df, rich_df_complete %>% select(bin_midpoint, cell, hemisphere, label), 
@@ -63,7 +46,8 @@ rich_df2 <- left_join(rich_df, rich_df_complete %>% select(bin_midpoint, cell, h
 rich_df2 <- rich_df2 %>%
   group_by(bin_midpoint, hemisphere) %>%
   mutate(label = ifelse(is.na(label), 
-                        ifelse("good" %in% label, "good", "bad"),  # If any "good" exists, set all as "good", else "bad"
+                        ifelse("good" %in% label, "good", "bad"), 
+                        # If any "good" exists, set all as "good", else "bad"
                         label)) %>%
   ungroup()
 # Reorder completeness so "Complete" is at the bottom
@@ -101,15 +85,15 @@ stacked_bar_plot <- ggplot(rich_df2, aes(x = cell_lat, fill = completeness)) +
   # Equator & Baseline Lines
   geom_vline(xintercept = 0, color = "red", linetype = "solid", linewidth = 1) +  
   # Axis Labels
-  labs(x = "Latitude",
-       y = "Cell Count",
-       fill = "Completeness") +
+  labs(x = "Latitude", y = "Cell Count", fill = "Completeness") +
   # Facet by 'stage' (bin_midpoint), sorted in descending order
-  facet_wrap(~ bin_midpoint,
-             labeller = as_labeller(function(x) paste0(rich_df2$stage[match(x, rich_df2$bin_midpoint)])),
+  facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
+             labeller = as_labeller(function(x) 
+               paste0(rich_df2$stage[match(x, rich_df2$bin_midpoint)])),
              nrow = 15, ncol = 6, scales = "free_y") +  
   # Keep x-axis strictly within [-90, 90] with ticks every 30 degrees
-  scale_x_continuous(limits = c(-90, 90), breaks = seq(-90, 90, 30), expand = c(0, 0)) +  
+  scale_x_continuous(limits = c(-90, 90), breaks = seq(-90, 90, 30), 
+                     expand = c(0, 0)) +  
   # Ensure Y-axis always has 4 labels (0, 1/3 max, 2/3 max, max)
   scale_y_continuous(
     breaks = function(y) {
@@ -141,4 +125,5 @@ stacked_bar_plot <- ggplot(rich_df2, aes(x = cell_lat, fill = completeness)) +
 # Save and display plot
 print(stacked_bar_plot)
 ggsave(sprintf("./figures/%s_km_%s_quota_completeness_histogram.jpg", 
-               params$spacing, params$level), stacked_bar_plot, width = 8, height = 8, dpi = 300)
+               params$spacing, params$level), stacked_bar_plot, 
+       width = 8, height = 8, dpi = 300)

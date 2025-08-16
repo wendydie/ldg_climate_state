@@ -3,9 +3,9 @@
 calculate_slope_stats <- function(df, percentile) {
   df %>%
     group_by(bin_midpoint) %>%
-    filter(n() > 2, length(unique(abs_lat_bin_mid)) > 1) %>%  
+    filter(n() > 1, length(unique(abs_lat_bin_mid)) > 1) %>%
     summarise(
-      model = list(lm(!!sym(percentile) ~ abs_lat_bin_mid, data = cur_data())), 
+      model = list(lm(!!sym(percentile) ~ abs_lat_bin_mid, data = cur_data())),
       .groups = "drop"
     ) %>%
     rowwise() %>%

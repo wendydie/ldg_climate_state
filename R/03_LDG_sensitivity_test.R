@@ -62,9 +62,14 @@ climate_labels <- data.frame(
 # -- 3. Draw the figure ----------------------------------
 P_north_sensitivity <- ggplot(filter(slope_data, slope_type == "Northern"), 
                   aes(x = bin_midpoint, y = slope_value, color = quantile)) +
+  # Fill the "near zero" range from -0.1 to 0.1 with a light blue rectangle
+  annotate("rect",
+           xmin = -Inf, xmax = Inf,
+           ymin = -0.1, ymax = 0.1,
+           fill = "lightblue", alpha = 0.3) +
   # Add slope curves for different types
   geom_line(linewidth = 1) +
-  geom_point(size = 2) +
+  geom_point(aes(shape = abs(slope_value) < 0.1), size = 2) +
   # Add climate state color bars
   geom_rect(data = climate_states, 
             aes(xmin = top, xmax = bottom, 
@@ -77,7 +82,7 @@ P_north_sensitivity <- ggplot(filter(slope_data, slope_type == "Northern"),
   # Add a black border, enclosing only the data range
   geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val*1.02), 
             color = "black", fill = NA, linewidth = 1) +
-  geom_hline(yintercept = 0, color="black", linewidth=0.8) + 
+  geom_hline(yintercept = 0, color="black", linewidth=0.8, linetype = "dashed") + 
   # Set x and y axis ranges
   scale_x_reverse(
     name = "Geological time (Ma)",
@@ -96,7 +101,7 @@ P_north_sensitivity <- ggplot(filter(slope_data, slope_type == "Northern"),
   )+
   # annotate ("text", x = 540, y = y_max_val*0.85,label="A",
   #           size = 4, fontface = "bold")+
-  annotate ("text", x = 80, y = y_max_val*0.8,label="Northern Hemishphere",
+  annotate ("text", x = 80, y = y_max_val*0.8,label="Northern Hemisphere",
             size = 4, fontface = "bold")+
   theme_minimal() +
   theme(
@@ -115,6 +120,11 @@ P_north_sensitivity <- ggplot(filter(slope_data, slope_type == "Northern"),
   )
 P_south_sensitivity <- ggplot(filter(slope_data, slope_type == "Southern"), 
                   aes(x = bin_midpoint, y = slope_value, color = quantile)) +
+  # Fill the "near zero" range from -0.1 to 0.1 with a light blue rectangle
+  annotate("rect",
+           xmin = -Inf, xmax = Inf,
+           ymin = -0.1, ymax = 0.1,
+           fill = "lightblue", alpha = 0.3) +
   # Add slope curves for different types
   geom_line(linewidth = 1) +
   # **Use geom_smooth() for smoother lines**
@@ -132,7 +142,7 @@ P_south_sensitivity <- ggplot(filter(slope_data, slope_type == "Southern"),
   # Add a black border, enclosing only the data range
   geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val), 
             color = "black", fill = NA, linewidth = 1) +
-  geom_hline(yintercept = 0, color="black", linewidth=0.8) + 
+  geom_hline(yintercept = 0, color="black", linewidth=0.8, linetype = "dashed") + 
   # Set x and y axis ranges
   scale_x_reverse(
     limits = c(x_max_val, 0),
@@ -156,7 +166,7 @@ P_south_sensitivity <- ggplot(filter(slope_data, slope_type == "Southern"),
   ) +
   # annotate ("text", x = 540, y = y_max_val*0.85,label="B",
   #           size = 4, fontface = "bold")+
-  annotate ("text", x = 80, y = y_max_val*0.8,label="Southern Hemishphere",
+  annotate ("text", x = 80, y = y_max_val*0.8,label="Southern Hemisphere",
             size = 4, fontface = "bold")+
   coord_geo(
     xlim = c(x_max_val, 0),
@@ -173,7 +183,7 @@ P_south_sensitivity <- ggplot(filter(slope_data, slope_type == "Southern"),
     axis.ticks.x = element_line(color = "black", linewidth = 0.5),
     axis.ticks.y = element_line(color = "black", linewidth = 0.5),
     panel.spacing = unit(0.3, "lines"),  # Reduce spacing between facets
-    legend.position = "right"  # Remove redundant legend
+    legend.position = "none"  # Remove redundant legend
   )
 
 climate_bar <- ggplot() +
@@ -207,6 +217,7 @@ ggsave(svTimeall_path, slope_vTimesensitivity_plot, width = 8, height = 8, dpi =
 svTimeall_path <- sprintf("./figures/test/%s km %slevel %s equal-area latitude bins LDG time series figure.pdf", 
                           params$spacing, params$level, rich_params$n_lat_bins)
 ggsave(svTimeall_path, slope_vTimesensitivity_plot, width = 8, height = 8, dpi = 300)
+
 # Filter out "bad" data and ensure bin_midpoint is numeric
 slope_data <- LDG_slope %>%
   filter(label != "bad") %>%
@@ -230,8 +241,14 @@ quantile_colors <- c(
 
 # Create boxplot showing LDG slope distribution across climate states
 slope_sensitivity_boxplot <- ggplot(slope_boxplot_data, aes(x = climate_state, y = slope, fill = quantile)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.7) +  # Draw boxplot without outliers
-  geom_jitter(aes(color = quantile), width = 0.2, size = 1, alpha = 0.5) +  # Add jitter points for data visualization
+  # Fill the "near zero" range from -0.1 to 0.1 with a light blue rectangle
+  annotate("rect",
+           xmin = -Inf, xmax = Inf,
+           ymin = -0.1, ymax = 0.1,
+           fill = "lightblue", alpha = 0.3) +
+  geom_boxplot(aes(fill = quantile), outlier.shape = NA, alpha = 0.7, position = position_dodge(width = 0.75)) +
+  geom_jitter(aes(color = quantile), size = 1, alpha = 0.5,
+              position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.75))+
   geom_hline(yintercept = 0, color = "black", linewidth = 0.8) + 
   scale_fill_manual(name = "Quantile", values = quantile_colors) +  # Assign fill colors
   scale_color_manual(name = "Quantile", values = quantile_colors) +  # Assign point colors
@@ -244,8 +261,8 @@ slope_sensitivity_boxplot <- ggplot(slope_boxplot_data, aes(x = climate_state, y
               group_by(hemisphere) %>%
               summarise(x_label = 'Hothouse',  # Position at the rightmost point
                         y_label = y_max_val*0.85),  # Position above max slope
-            aes(x = x_label, y = y_label, label = hemisphere),
-            hjust = 1, vjust = 1, size = 4, fontface = "bold", inherit.aes = FALSE) +
+            aes(x = x_label, y = y_label, label =paste(hemisphere, "Hemisphere")),
+            hjust = 1, vjust = 1, size = 3.5, fontface = "bold", inherit.aes = FALSE) +
   # Titles and formatting
   labs(
     x = "Climate State",

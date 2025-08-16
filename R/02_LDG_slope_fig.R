@@ -13,6 +13,7 @@ library(tidyr)
 library(viridis)
 
 source("./R/options.R")
+#
 rich_df <- rich_df %>%
   group_by(bin_midpoint, hemisphere, abs_lat_bin_mid) %>%
   mutate(
@@ -21,20 +22,20 @@ rich_df <- rich_df %>%
     q75 = quantile(qD_normalized, 0.75, na.rm = TRUE),
     q90 = quantile(qD_normalized, 0.90, na.rm = TRUE),
     q95 = quantile(qD_normalized, 0.95, na.rm = TRUE)
-  )%>%
+  ) %>%
   ungroup()
-df_long <- rich_df %>%
-  select(bin_midpoint, abs_lat_bin_mid, q50, q60, q75, q90, q95, color) %>%
-  pivot_longer(cols = c(q50, q60, q75, q90, q95), 
-               names_to = "quantile", values_to = "richness_value")
 
 # Generate OLS fitted values for visualization, grouped by percentile
 ols_lines <- rich_df %>%
-  select(bin_midpoint, abs_lat_bin_mid, hemisphere, q50, q60, q75, q90, q95) %>%  # Include percentiles
-  pivot_longer(cols = c(q50, q60, q75, q90, q95), names_to = "quantile", values_to = "qD_value") %>%  # Reshape to long format
-  left_join(LDG_slope, by = c("bin_midpoint", "hemisphere", "quantile")) %>%  # Join with slopes based on bin, hemisphere, and quantile
+  select(bin_midpoint, stage, abs_lat_bin_mid, hemisphere,label,
+         color, qD_normalized, q50, q60, q75, q90, q95) %>%  # Include percentiles
+  pivot_longer(cols = c(q50, q60, q75, q90, q95), 
+               names_to = "quantile", values_to = "qD_value") %>%  # Reshape to long format
+  left_join(LDG_slope[,c("bin_midpoint", "hemisphere", "quantile", "slope", "intercept")], 
+            by = c("bin_midpoint", "hemisphere", "quantile")) %>%  # Join with slopes based on bin, hemisphere, and quantile
   mutate(fitted_values = intercept + slope *  abs_lat_bin_mid) %>%  # Compute Theil-Sen fitted values
   filter(!is.na(fitted_values))  # Remove rows where fitted values could not be computed
+
 # Step 4: Create the scatter plot with LDG slopes------------------------
 LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
                                   color = ifelse(label == "bad", "Bad hemipshere", hemisphere),
@@ -48,7 +49,8 @@ LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
              size = 2) +
   # Theil-Sen fitted line for Northern Hemisphere
   geom_line(data = filter(ols_lines, quantile=='q75'),
-            aes(x = abs_lat_bin_mid, y = fitted_values, linetype = hemisphere, color = color),
+            aes(x = abs_lat_bin_mid, y = fitted_values, 
+                linetype = hemisphere, color = color),
             linewidth = 1, inherit.aes = FALSE) +
   # Use viridis color palette (same for points and lines)
   scale_color_manual(name = "LDG slope",
@@ -61,7 +63,8 @@ LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
                                                     "Southern" = "solid")) +
   guides(
     shape = guide_legend(override.aes = list(size = c(2, 3, 3))),
-    color = guide_legend(override.aes = list(color = c("#D3D3D3", "#0072B2", "#E69F00"), shape = c(15, 16, 17))),
+    color = guide_legend(override.aes = list(color = c("#D3D3D3", "#0072B2", "#E69F00"), 
+                                             shape = c(15, 16, 17))),
     linetype = "none"
   ) +
   # Facet by bin_midpoint with 8 columns
@@ -72,7 +75,7 @@ LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
       return(c(0, mid_val, max_val))
     }
   )  +
-  facet_wrap(~ bin_midpoint,
+  facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
              labeller = as_labeller(function(x) paste0(rich_df$stage[match(x, rich_df$bin_midpoint)])),
              scales = "free_y", ncol = 6) +
   # Labels
@@ -100,16 +103,12 @@ gg_path <- sprintf("./figures/%s km %squota %s equal-area latitude bins LDG slop
 
 ggsave(gg_path, LDG_s_plot, width = 8, height = 9, dpi = 300)
 
-for (bin in unique(rich_df$bin_midpoint)) {
-
-  df_bin <- rich_df %>%
-    filter(bin_midpoint == bin)
-
+for (stg in unique(rich_df$stage)) {
+  
+  df_bin <- subset(rich_df, stage == stg)
+  bin <- unique(df_bin$bin_midpoint)
   for (perc in rich_params$percentiles) {
-
-    slope_data <- LDG_slope %>% filter(bin_midpoint == bin, quantile == perc)
-    olsl_data <- ols_lines %>% filter(bin_midpoint == bin, quantile == perc)
-
+    olsl_data <- ols_lines %>% filter(stage == stg, quantile == perc)
     # Get unique color levels
     color_levels <- unique(df_bin$color)
 
@@ -122,12 +121,11 @@ for (bin in unique(rich_df$bin_midpoint)) {
       geom_point(alpha = 0.7, size = 2) +
       geom_point(data = filter(df_bin, label == "good"),
                  aes(x = abs_lat_bin_mid, y = get(perc),
-                     color = color),
-                 shape = 4,
-                 size = 2) +
+                     color = color), shape = 4, size = 2) +
       # Theil-Sen fitted lines (Merged for Northern & Southern Hemispheres)
       geom_line(data = olsl_data,
-                aes(x = abs_lat_bin_mid, y = fitted_values, linetype = hemisphere, color = color),
+                aes(x = abs_lat_bin_mid, y = fitted_values, 
+                    linetype = hemisphere, color = color),
                 linewidth = 1, inherit.aes = FALSE) +
       scale_color_manual(name = "LDG slope", values = color_palette) +  # Dynamically adjust colors
       scale_linetype_manual(name = "Legend", values = c("Northern" = "solid",
@@ -137,7 +135,7 @@ for (bin in unique(rich_df$bin_midpoint)) {
         linetype = "none"
       ) +
       labs(
-        title = sprintf("LDG Slope for Bin %s - Percentile %s", bin, perc),
+        title = sprintf("LDG Slope for %s (%s Ma)- Percentile %s", stg, bin, perc),
         x = "Absolute Latitude (°)",
         y = sprintf("Richness (%s)", perc)
       ) +
@@ -150,13 +148,14 @@ for (bin in unique(rich_df$bin_midpoint)) {
         axis.title = element_text(size = 12),
         panel.border = element_rect(color = "black", fill = NA, linewidth = 1)
       )
+    print(p)
     # Save the figure
     output_dir <- sprintf("./figures/LDG slope per stage/%s km %squota %s equal_area latitude bins",
                           params$spacing, params$level, rich_params$n_lat_bins)
     if (!dir.exists(output_dir)) {
       dir.create(output_dir, recursive = TRUE)
     }
-    file_name <- sprintf("%s/Richness_vs_Latitude_Bin_%s_percentile_%s.jpg", output_dir, bin,perc)
+    file_name <- sprintf("%s/Richness_vs_Latitude_Bin_%s_percentile_%s.jpg", output_dir, bin, perc)
     ggsave(file_name, p, width = 6, height = 5, dpi = 150)
   }
 }
@@ -186,13 +185,13 @@ percentile_colors <- setNames(viridis(7, option = "D"), c("q0", "q25", "q50", "q
 # Plot species richness with faceting
 LDG_fig <- ggplot() +
   geom_point(data = rich_df, aes(x = cell_lat, y = qD_normalized), color = "black", alpha = 0.5) +  # Raw richness data
-  geom_line(data = richness_percentiles, aes(x = lat_bin_mid, y = richness, color = percentile, group = percentile), size = 1) +
+  geom_line(data = richness_percentiles, aes(x = lat_bin_mid, y = richness, color = percentile, group = percentile), linewidth = 1) +
   scale_color_manual(name = "Percentile", values = percentile_colors) +
   labs(x = "Latitude",
        y = "Normalized generic richness") +
   
   # Facet by bin_midpoint with stage names
-  facet_wrap(~ bin_midpoint,
+  facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
              labeller = as_labeller(function(x) paste0(rich_df$stage[match(x, rich_df$bin_midpoint)])),
              scales = "free_y", ncol = 6) +
   
@@ -224,13 +223,12 @@ LDG_f_path <- sprintf("./figures/LDG_per_stage_facet_%s_km_%s_quota %s_euqal_are
 ggsave(LDG_f_path, LDG_fig, width = 8, height = 9, dpi = 300)
 
 
-for (bin in unique(rich_df$bin_midpoint)) {
-
-  df_bin <- rich_df %>%
-    filter(bin_midpoint == bin)
-
+for (stg in unique(rich_df$stage)) {
+  
+  df_bin <- subset(rich_df, stage == stg)
+  bin <- unique(df_bin$bin_midpoint)
   # Compute richness percentiles
-  richness_percentiles <- df_bin %>%
+  richness_percentile <- df_bin %>%
     group_by(lat_bin_mid) %>%
     summarise(across(qD_normalized, list(q0 = ~quantile(., 0, na.rm = TRUE),
                                          q25 = ~quantile(., 0.25, na.rm = TRUE),
@@ -250,9 +248,9 @@ for (bin in unique(rich_df$bin_midpoint)) {
   # Plot species richness
   p <- ggplot() +
     geom_point(data = df_bin, aes(x = cell_lat, y = qD_normalized), color = "black", alpha = 0.5) +  # Raw richness data
-    geom_line(data = richness_percentiles, aes(x = lat_bin_mid, y = richness, color = percentile, group = percentile), size = 1) +
+    geom_line(data = richness_percentile, aes(x = lat_bin_mid, y = richness, color = percentile, group = percentile), size = 1) +
     scale_color_manual(name = "Percentile", values = percentile_colors) +
-    labs(title = sprintf("Genus Richness vs. Latitude (Bin: %s Ma)", bin),
+    labs(title = sprintf("Genus Richness vs. Latitude %s (%s Ma)", stg, bin),
          x = "Latitude",
          y = "Normalized richness") +
     theme_minimal() +
@@ -263,7 +261,7 @@ for (bin in unique(rich_df$bin_midpoint)) {
       axis.title = element_text(size = 12),
       panel.border = element_rect(color = "black", fill = NA, linewidth = 1)
     )
-
+  print(p)
   # Save the figure
   output_dir <- sprintf("./figures/LDG per stage/%s km %squota %s equal_area latitude bins",
                         params$spacing, params$level, rich_params$n_lat_bins)

@@ -13,12 +13,12 @@ library(ggplot2)
 library(palaeoverse)
 source("./R/options.R")
 source("./R/functions/calculate_LDG_slope.R")
+source("./R/functions/check_hemisphere_good.R")
 # Read dataset-----------------------------------------------------------
 rich_df <- read.csv(sprintf("./results/LDG/%s_cell_%s_richness.csv", 
                             params$spacing, params$level))
 time_bins <- readRDS("./data/time_bins.RDS")
-lat_bins <- palaeoverse::lat_bins_area(n = rich_params$n_lat_bins)
-lat_bins <- lat_bins %>%
+lat_bins <- palaeoverse::lat_bins_area(n = rich_params$n_lat_bins) %>% 
   arrange(min)
 # Step 1 : Data filtering -----------------------------------------------
 # Filter the incomplete cells.
@@ -27,50 +27,50 @@ rich_df <- rich_df %>%
 # Our time period starts from 486.8500 because the climate state data begins at 486.85.
 rich_df$stage <- time_bins$interval_name[match(rich_df$bin_midpoint, time_bins$mid_ma)]
 rich_df <- rich_df %>% 
-  filter(bin_midpoint < 486.8500)%>%
-  mutate(bin_midpoint = factor(bin_midpoint, 
-                               levels = sort(unique(bin_midpoint), decreasing = TRUE)))
-# Create 12 equal-area latitude bands for LDG slope calculation
-rich_df <- rich_df %>%
-  mutate(bin = findInterval(cell_lat, vec = lat_bins$min))
-rich_df <- rich_df %>%
-  left_join(lat_bins %>% select(bin, lat_bin_mid = mid), by = "bin")
+  filter(bin_midpoint <= 486.8500) %>%
+  mutate(bin_index = findInterval(cell_lat, vec = c(lat_bins$min, Inf)),
+         bin = lat_bins$bin[bin_index],
+         abs_lat = abs(cell_lat),  # Convert latitude to absolute value
+         hemisphere = case_when(
+           cell_lat >= 0 ~ "Northern",  # good cells & cell_lat >= 0 → Northern
+           cell_lat < 0 ~ "Southern"  # good cells & cell_lat < 0 → Southern
+           ),
+         lat_band_mid = (floor(abs_lat / 30) *
+                           30) + (30 / 2) # Divide the cells into tropical(0,30)-temperate(30,60)-pole(60,90) latitude bands for discarding reliable hemispheres.
+         ) %>%
+  left_join(lat_bins %>% select(bin, lat_bin_mid = mid), by = "bin") %>%
+  mutate(abs_lat_bin_mid = abs(lat_bin_mid))  # Midpoints of 12 equal-area latitude bands
+
 # The richness values are normalized to 100 in each stage by dividing the richness in each cell by the maximum richness within that stage.
 rich_df <- rich_df %>%
   group_by(bin_midpoint) %>%
   mutate(qD_normalized = qD*100 / max(qD)) %>%
   ungroup()
-# Convert latitude to absolute values and classify hemispheres.
-rich_df <- rich_df %>%
-  mutate(
-    abs_lat = abs(cell_lat),  # Convert latitude to absolute value
-    hemisphere = case_when(
-      cell_lat >= 0 ~ "Northern",  # good cells & cell_lat >= 0 → Northern
-      cell_lat < 0 ~ "Southern"  # good cells & cell_lat < 0 → Southern
-    ))
-# Divide the cells into tropical-temperate-pole latitude bands for discarding reliable hemispheres.
-expected_lat_bands <- seq(30 / 2, 90, 30)  # Midpoints
-rich_df <- rich_df %>%
-  mutate(lat_band_mid = (floor(abs_lat / 30) *
-                           30) + (30 / 2))
-# Classify data as "good" or "bad" using 30-degree bands
-rich_df <- rich_df %>%
-  group_by(bin_midpoint, hemisphere) %>%
-  mutate(
-    label = case_when(
-      all(c(15, 45) %in% lat_band_mid) ~ "good",  # 15 (0-30 midpoint), 45 (30-60 midpoint)
-      TRUE ~ "bad"
-    )
-  ) %>%
-  ungroup()
+# Classify data as "good" or "bad" -----------------------------------
+rich_df <- has_adjacent_bins (rich_df, lat_bins)
+# rich_df <- rich_df %>%
+#   group_by(bin_midpoint, hemisphere) %>%
+#   mutate(
+#     label = if (
+#       # n_distinct(abs_lat_bin_mid) >= 3 &
+#       sum(lat_band_mid == 15) >= 1 & sum(lat_band_mid == 45) >= 1 # & sum(lat_band_mid == 75) >= 1
+#     ) "good" else "bad"
+#   ) %>%
+#   ungroup()
+# south_bin_no <- lat_bins$bin[lat_bins$mid >= -40 & lat_bins$mid <= 0]
+# north_bin_no <- lat_bins$bin[lat_bins$mid <= 40 & lat_bins$mid >= 0]
+# rich_df <- rich_df %>%
+#   group_by(bin_midpoint, hemisphere) %>%
+#   mutate(
+#     label = ifelse(
+#       (hemisphere == "Southern" & all(south_bin_no %in% bin)) |
+#         (hemisphere == "Northern" & all(north_bin_no %in% bin)),
+#       "good", "bad"
+#     )
+#   ) %>%
+#   ungroup()
 rich_df <- rich_df %>% 
   mutate(color = ifelse(label == "bad", "Bad hemisphere", hemisphere))  # Add color column
-# Create 15-degree latitude bands for LDG slope calculation
-# rich_df <- rich_df %>%
-#   mutate(lat_band_mid_15 = (floor(abs_lat / rich_params$lat_band_width) * 
-#                               rich_params$lat_band_width) + rich_params$lat_band_width / 2)  # Midpoints of 15-degree bands
-rich_df <- rich_df %>%
-  mutate(abs_lat_bin_mid = abs(lat_bin_mid))  # Midpoints of 15-degree bands
 
 # Step 2 : Calculate richness -------------------------------------------
 # Calculate the richness at different percentiles, including q50 (median)
@@ -102,6 +102,13 @@ for (perc in rich_params$percentiles) {
 
 # Combine all percentile results into one `LDG_slope` dataframe
 LDG_slope <- bind_rows(slope_results)
+all_bin__hemi_perc <- expand.grid(
+  bin_midpoint = unique(rich_df$bin_midpoint),
+  hemisphere = c("Northern", "Southern"),
+  quantile = rich_params$percentiles
+)
+LDG_slope <- LDG_slope %>%
+  right_join(all_bin__hemi_perc, by = c("bin_midpoint", "hemisphere", "quantile"))
 
 # Assign "good" or "bad" labels from `rich_df`
 LDG_slope$label <- rich_df$label[match(
