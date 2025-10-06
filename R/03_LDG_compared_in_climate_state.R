@@ -463,9 +463,9 @@ boxplot <- ggplot(slope_flag, aes(x = state_with_n, y = slope_value, fill = slop
         plot.margin = margin(10, 30, 10, 10)
   ) +
   coord_cartesian(clip = 'off',xlim = c(1, 5), ylim = c(y_min_val,y_max_val)) +
-  annotate("text", x = 5.85, y = (y_max_val + 0.1) / 2, label = "Non-modern-type", 
+  annotate("text", x = 5.81, y = (y_max_val + 0.1) / 2, label = "Non-modern-type", 
            vjust = 0.5, hjust = 0.5, size = 4.5, angle = 270) +
-  annotate("text", x = 5.85, y = (y_min_val - 0.1) / 2, label = "Modern-type", 
+  annotate("text", x = 5.81, y = (y_min_val - 0.1) / 2, label = "Modern-type", 
            vjust = 0.5, hjust = 0.5, size = 4.5, angle = 270)
 
 # Save and display

@@ -104,8 +104,8 @@ P_north_sensitivity <- ggplot(filter(slope_data, slope_type == "Northern"),
     linetype = "none",
     shape = "none"
   ) +
-  annotate ("text", x = 80, y = y_max_val*0.8,label="Northern Hemisphere",
-            size = 4, fontface = "bold")+
+  annotate ("text", x = x_text_pos, y = y_max_val*0.85,label="Northern Hemisphere",
+            size = 4, fontface = "bold", hjust = 1)+
   theme_minimal() +
   theme(
     axis.title.x = element_blank(),
@@ -169,8 +169,8 @@ P_south_sensitivity <- ggplot(filter(slope_data, slope_type == "Southern"),
   ) +
   # annotate ("text", x = 540, y = y_max_val*0.85,label="B",
   #           size = 4, fontface = "bold")+
-  annotate ("text", x = 80, y = y_max_val*0.8,label="Southern Hemisphere",
-            size = 4)+
+  annotate ("text", x = x_text_pos, y = y_max_val*0.85,label="Southern Hemisphere",
+            size = 4, fontface = "bold", hjust = 1)+
   coord_geo(
     xlim = c(x_max_val, 0),
     pos = "bottom",
@@ -275,7 +275,7 @@ slope_sensitivity_boxplot <- ggplot(slope_boxplot_data, aes(x = climate_state, y
               summarise(x_label = 'Hothouse',  # Position at the rightmost point
                         y_label = y_max_val*0.9),  # Position above max slope
             aes(x = x_label, y = y_label, label =paste(hemisphere, "Hemisphere")),
-            hjust = 1, vjust = 1, size = 4, inherit.aes = FALSE) +
+            hjust = 0.7, vjust = 0.5, size = 4, inherit.aes = FALSE) +
   # Titles and formatting
   labs(
     x = "Climate state",
