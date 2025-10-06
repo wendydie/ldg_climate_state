@@ -14,34 +14,27 @@ df_long <- rich_df %>%
   select(bin_midpoint, abs_lat_bin_mid, q50, q60, q75, q90, q95, color) %>%
   pivot_longer(cols = c(q50, q60, q75, q90, q95), 
                names_to = "quantile", values_to = "richness_value")
-
 # Ensure consistent color mapping
 rich_df <- rich_df %>%
   mutate(color = factor(color, levels = c("Northern", "Southern", "Bad hemisphere")))
-
 # Get unique colors present in the dataset
 color_levels <- c("Northern", "Southern", "Bad hemisphere")
 color_palette <- c("Northern" = "#0072B2", "Southern" = "#E69F00", "Bad hemisphere" = "#D3D3D3")
 color_palette <- color_palette[color_levels]  # Keep only the necessary colors
-
 # Define linetypes for different percentiles
 quantile_palette <- c("q50" = "solid", "q60" = "dashed", "q75" = "dotdash", "q90" = "twodash", "q95" = "longdash")
-
 # Create the faceted plot
 combined_rich_fig <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized, color = color)) +
   geom_point(alpha = 0.7, size = 1) +
-  
   # Add raw richness percentile points
   geom_point(data = df_long, 
              aes(x = abs_lat_bin_mid, y = richness_value, color = color, shape = quantile),
              size = 1, inherit.aes = FALSE) +
-  
   # Add Theil-Sen fitted lines for each percentile
   geom_line(data = ols_lines, 
             aes(x = abs_lat_bin_mid, y = fitted_values, 
                 linetype = quantile, color = color), 
             linewidth = 1, inherit.aes = FALSE) +
-  
   # Use viridis color palette (same for points and lines)
   scale_color_manual(name = "LDG slope",
                      values = c("Bad hemipshere" = "#D3D3D3",
@@ -49,11 +42,10 @@ combined_rich_fig <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized, color =
                                 "Southern" = "#E69F00")) +
   scale_linetype_manual(name = "Percentile Fit", values = quantile_palette) +
   scale_shape_manual(name = "Percentiles", values = c("q50" = 16, "q60" = 17, "q75" = 15, "q90" = 18, "q95" = 19)) +
-  
   guides(
     color = guide_legend(title = "LDG slope"),
-    linetype = guide_legend(title = "Percentile Fit"),
-    shape = guide_legend(title = "Percentiles")
+    linetype = guide_legend(title = "Percentile"),
+    shape = "none"
   ) +
   facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
              labeller = as_labeller(function(x) paste0(rich_df$stage[match(x, rich_df$bin_midpoint)])),
@@ -68,8 +60,8 @@ combined_rich_fig <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized, color =
   ) +
   # Labels
   labs(
-    x = "Absolute Latitude (°)",
-    y = "Generic Richness (qD)"
+    x = "Absolute latitude (°)",
+    y = "Generic richness"
   ) +
   theme_minimal() +
   # Reduce spacing between facet plots
@@ -96,63 +88,50 @@ for (stg in unique(rich_df$stage)) {
   df_bin <- rich_df %>% 
     filter(stage == stg, !is.na(color)) %>%
     mutate(color = factor(color, levels = c("Northern", "Southern", "Bad hemisphere")))
-  
   bin <- unique(df_bin$bin_midpoint)
-  
   olsl_data_bin <- ols_lines %>% 
     filter(stage == stg, !is.na(color)) %>%
     mutate(color = factor(color, levels = c("Northern", "Southern", "Bad hemisphere")))
-  
   # Convert q50, q60, q75, q90, q95 into long format
   df_long <- df_bin %>%
     select(abs_lat_bin_mid, q50, q60, q75, q90, q95, color) %>%
     pivot_longer(cols = c(q50, q60, q75, q90, q95), 
                  names_to = "quantile", values_to = "richness_value")
-  
   # Get unique colors present in the current bin
   color_levels <- unique(c(df_bin$color, olsl_data_bin$color))
-  
   # Ensure we only keep colors that exist in the data
   color_palette <- c("Northern" = "#0072B2", "Southern" = "#E69F00", "Bad hemisphere" = "#D3D3D3")
   color_palette <- color_palette[color_levels]  # Only use colors that exist in the data
-  
   # Define linetypes for different percentiles
   quantile_palette <- c("q50" = "solid", "q60" = "dashed", "q75" = "dotdash", "q90" = "twodash", "q95" = "longdash")
   
   p <- ggplot(df_bin, aes(x = abs_lat, y = qD_normalized, color = color)) +
     geom_point(alpha = 0.7, size = 2) +
-    
     # Add raw richness percentile points
     geom_point(data = df_long, 
                aes(x = abs_lat_bin_mid, y = richness_value, color = color, shape = quantile),
                size = 2, inherit.aes = FALSE) +
-    
     # Add Theil-Sen fitted lines for each percentile
     geom_line(data = olsl_data_bin, 
               aes(x = abs_lat_bin_mid, y = fitted_values, 
                   linetype = quantile, color = color), 
               linewidth = 1, inherit.aes = FALSE) +
-    
     # Add OLS fit for qD_normalized
     geom_smooth(data = df_bin, aes(x = abs_lat, y = qD_normalized, color = color), 
                 method = "lm", se = FALSE, linetype = "dotted", linewidth = 1.2) +
-    
     scale_color_manual(name = "Hemisphere type", values = color_palette) +  
     scale_linetype_manual(name = "Percentile fit", values = quantile_palette) +
     scale_shape_manual(name = "Percentiles", values = c("q50" = 16, "q60" = 17, "q75" = 15, "q90" = 18, "q95" = 19)) +
-    
     guides(
       color = guide_legend(override.aes = list(color = unname(color_palette))),
-      linetype = guide_legend(title = "Percentile fit"),
-      shape = guide_legend(title = "Percentiles"),
+      linetype = guide_legend(title = "Percentiles"),
+      shape = "none",
     ) +
-    
     labs(
       title = sprintf("LDG Slope for %s (%sMa)", stg, bin),
-      x = "Absolute Latitude (°)",
+      x = "Absolute latitude (°)",
       y = "Generic richness"
     ) +
-    
     theme_minimal() +
     theme(
       legend.position = "right",
@@ -162,15 +141,12 @@ for (stg in unique(rich_df$stage)) {
       axis.title = element_text(size = 12),
       panel.border = element_rect(color = "black", fill = NA, linewidth = 1)
     )
-  print(p)
   # Save the figure in a new output directory
   output_dir <- sprintf("./figures/LDG_slope_combined/%s km %squota %s equal_area latitude bins", 
                         params$spacing, params$level, rich_params$n_lat_bins)
-  
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
   }
-  
   file_name <- sprintf("%s/Richness_vs_Latitude_Bin_%s_combined.jpg", output_dir, bin)
   ggsave(file_name, p, width = 7, height = 5, dpi = 200)
 }

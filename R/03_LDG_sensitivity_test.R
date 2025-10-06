@@ -73,14 +73,14 @@ P_north_sensitivity <- ggplot(filter(slope_data, slope_type == "Northern"),
   # Add climate state color bars
   geom_rect(data = climate_states, 
             aes(xmin = top, xmax = bottom, 
-                ymin = y_max_val*0.9, 
-                ymax = y_max_val *1.02, 
+                ymin = y_max_val, 
+                ymax = y_max_val *1.12, 
                 fill = climate_color),
             linewidth = 0.3, inherit.aes = FALSE) +
   # Force ggplot2 to use the exact colors in the dataset
   scale_fill_identity(name = "Climate State", guide = "none") +
   # Add a black border, enclosing only the data range
-  geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val*1.02), 
+  geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val*1.12), 
             color = "black", fill = NA, linewidth = 1) +
   geom_hline(yintercept = 0, color="black", linewidth=0.8, linetype = "dashed") + 
   # Set x and y axis ranges
@@ -91,7 +91,7 @@ P_north_sensitivity <- ggplot(filter(slope_data, slope_type == "Northern"),
     expand = c(0, 0)
   ) +
   scale_y_continuous(
-    limits = c(y_min_val, y_max_val*1.02),
+    limits = c(y_min_val, y_max_val*1.12),
     expand = c(0, 0)
   ) +
   labs(
@@ -99,8 +99,11 @@ P_north_sensitivity <- ggplot(filter(slope_data, slope_type == "Northern"),
     y = 'Slope value',
     tag = "A"
   )+
-  # annotate ("text", x = 540, y = y_max_val*0.85,label="A",
-  #           size = 4, fontface = "bold")+
+  guides(
+    color = guide_legend(title = "Percentile"),
+    linetype = "none",
+    shape = "none"
+  ) +
   annotate ("text", x = 80, y = y_max_val*0.8,label="Northern Hemisphere",
             size = 4, fontface = "bold")+
   theme_minimal() +
@@ -161,13 +164,13 @@ P_south_sensitivity <- ggplot(filter(slope_data, slope_type == "Southern"),
   # ) +
   labs(
     x = "Time (Ma)",
-    y = "Slope Value",
+    y = "Slope value",
     tag = "B"
   ) +
   # annotate ("text", x = 540, y = y_max_val*0.85,label="B",
   #           size = 4, fontface = "bold")+
   annotate ("text", x = 80, y = y_max_val*0.8,label="Southern Hemisphere",
-            size = 4, fontface = "bold")+
+            size = 4)+
   coord_geo(
     xlim = c(x_max_val, 0),
     pos = "bottom",
@@ -186,21 +189,31 @@ P_south_sensitivity <- ggplot(filter(slope_data, slope_type == "Southern"),
     legend.position = "none"  # Remove redundant legend
   )
 
-climate_bar <- ggplot() +
-  geom_rect(data = climate_legend, 
-            aes(xmin = min_ma, xmax = max_ma, ymin = 0.8, ymax = 0.85, fill = climate_color)) +
-  geom_text(data = climate_labels, 
-            aes(x = x, y = 0.83, label = label, hjust = hjust),
-            size = 4) +
-  scale_x_reverse(limits = c(x_max_val, 0)) +
-  scale_fill_identity() +
+climate_bar <- ggplot(climate_legend, aes(x = 0, y = 0, fill = climate_state)) +
+  # Invisible points to trigger the legend (not plotted on canvas)
+  geom_point(shape = 22, size = 5, alpha = 0) +
+  scale_fill_manual(
+    values = climate_colors,
+    name   = "Climate state",
+    drop   = FALSE
+  ) +
+  guides(
+    fill = guide_legend(
+      override.aes = list(alpha = 1, shape = 22, size = 5, colour = NA) # show color blocks in legend
+    )
+  ) +
   theme_void() +
   theme(
-    plot.margin = margin(0, 10, 0, 10)
-  ) 
+    legend.position = "top",
+    legend.title    = element_text(size = 12),
+    legend.text     = element_text(size = 12),
+    plot.margin     = margin(0, 10, 0, 10)
+  )
+# Extract only the legend as a grob
+climate_legend_grob <- cowplot::get_legend(climate_bar)
 
 # -- 4. Combine plots and print ---------------------------
-slope_vTimesensitivity_plot <- ((P_north_sensitivity / P_south_sensitivity) / climate_bar) +
+slope_vTimesensitivity_plot <- ((P_north_sensitivity / P_south_sensitivity) / climate_legend_grob) +
   plot_layout(heights = c(10, 10, 1)) &
   theme(
     plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"),
@@ -250,8 +263,8 @@ slope_sensitivity_boxplot <- ggplot(slope_boxplot_data, aes(x = climate_state, y
   geom_jitter(aes(color = quantile), size = 1, alpha = 0.5,
               position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.75))+
   geom_hline(yintercept = 0, color = "black", linewidth = 0.8) + 
-  scale_fill_manual(name = "Quantile", values = quantile_colors) +  # Assign fill colors
-  scale_color_manual(name = "Quantile", values = quantile_colors) +  # Assign point colors
+  scale_fill_manual(name = "Percentile", values = quantile_colors) +  # Assign fill colors
+  scale_color_manual(name = "Percentile", values = quantile_colors) +  # Assign point colors
   
   # Facet by hemisphere
   facet_wrap(~ hemisphere, ncol=1) +  
@@ -260,24 +273,27 @@ slope_sensitivity_boxplot <- ggplot(slope_boxplot_data, aes(x = climate_state, y
   geom_text(data = slope_boxplot_data %>%
               group_by(hemisphere) %>%
               summarise(x_label = 'Hothouse',  # Position at the rightmost point
-                        y_label = y_max_val*0.85),  # Position above max slope
+                        y_label = y_max_val*0.9),  # Position above max slope
             aes(x = x_label, y = y_label, label =paste(hemisphere, "Hemisphere")),
-            hjust = 1, vjust = 1, size = 3.5, fontface = "bold", inherit.aes = FALSE) +
+            hjust = 1, vjust = 1, size = 4, inherit.aes = FALSE) +
   # Titles and formatting
   labs(
-    x = "Climate State",
-    y = "Slope Value",
-    title = "LDG Slope Distributions Across Climate States"
+    x = "Climate state",
+    y = "Slope value"
   ) +
   theme_minimal() +
   theme(
     axis.title = element_text(size = 14),
-    axis.text = element_text(size = 14),
+    axis.text = element_text(size = 12),
     strip.text = element_blank(),  # Remove facet labels
     strip.background = element_blank(),  # Remove facet label background
     panel.spacing = unit(0.3, "lines"),  # Reduce spacing between facets
     panel.border = element_rect(color = "black", fill = NA, linewidth = 1),
-    legend.position = "bottom"  # Remove redundant legend
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.position = "bottom",
+    legend.margin = margin(0,0,0,0),
+    legend.box.spacing = unit(0.1, "cm")
     
   ) +
   guides(fill = guide_legend(direction = "horizontal"))
@@ -289,7 +305,7 @@ print(slope_sensitivity_boxplot)
 sb_path <- sprintf("./figures/test/%s km %slevel %s equal-area latitude bins LDG boxplot figure.jpg", 
                    params$spacing, params$level, rich_params$n_lat_bins)
 
-ggsave(sb_path, slope_sensitivity_boxplot, width = 6, height = 8, dpi = 300)
+ggsave(sb_path, slope_sensitivity_boxplot, width = 6.5, height = 8, dpi = 300)
 
 
 

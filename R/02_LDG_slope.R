@@ -47,28 +47,32 @@ rich_df <- rich_df %>%
   mutate(qD_normalized = qD*100 / max(qD)) %>%
   ungroup()
 # Classify data as "good" or "bad" -----------------------------------
-rich_df <- has_adjacent_bins (rich_df, lat_bins)
-# rich_df <- rich_df %>%
-#   group_by(bin_midpoint, hemisphere) %>%
-#   mutate(
-#     label = if (
-#       # n_distinct(abs_lat_bin_mid) >= 3 &
-#       sum(lat_band_mid == 15) >= 1 & sum(lat_band_mid == 45) >= 1 # & sum(lat_band_mid == 75) >= 1
-#     ) "good" else "bad"
-#   ) %>%
-#   ungroup()
-# south_bin_no <- lat_bins$bin[lat_bins$mid >= -40 & lat_bins$mid <= 0]
-# north_bin_no <- lat_bins$bin[lat_bins$mid <= 40 & lat_bins$mid >= 0]
-# rich_df <- rich_df %>%
-#   group_by(bin_midpoint, hemisphere) %>%
-#   mutate(
-#     label = ifelse(
-#       (hemisphere == "Southern" & all(south_bin_no %in% bin)) |
-#         (hemisphere == "Northern" & all(north_bin_no %in% bin)),
-#       "good", "bad"
-#     )
-#   ) %>%
-#   ungroup()
+if (rich_params$n_lat_bins == 6){
+  rich_df <- rich_df %>%
+    group_by(bin_midpoint, hemisphere) %>%
+    mutate(
+      label = if (
+        # n_distinct(abs_lat_bin_mid) >= 3 &
+        sum(lat_band_mid == 15) >= 1 & sum(lat_band_mid == 45) >= 1 # & sum(lat_band_mid == 75) >= 1
+      ) "good" else "bad"
+    ) %>%
+    ungroup()
+  south_bin_no <- lat_bins$bin[lat_bins$mid >= -40 & lat_bins$mid <= 0]
+  north_bin_no <- lat_bins$bin[lat_bins$mid <= 40 & lat_bins$mid >= 0]
+  rich_df <- rich_df %>%
+    group_by(bin_midpoint, hemisphere) %>%
+    mutate(
+      label = ifelse(
+        (hemisphere == "Southern" & all(south_bin_no %in% bin)) |
+          (hemisphere == "Northern" & all(north_bin_no %in% bin)),
+        "good", "bad"
+      )
+    ) %>%
+    ungroup()
+} else{
+  rich_df <- has_adjacent_bins (rich_df, lat_bins)
+}
+
 rich_df <- rich_df %>% 
   mutate(color = ifelse(label == "bad", "Bad hemisphere", hemisphere))  # Add color column
 

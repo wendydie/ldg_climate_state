@@ -13,7 +13,7 @@ library(tidyr)
 library(viridis)
 
 source("./R/options.R")
-#
+# -----------------------------------------------------------------------
 rich_df <- rich_df %>%
   group_by(bin_midpoint, hemisphere, abs_lat_bin_mid) %>%
   mutate(
@@ -80,7 +80,7 @@ LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
              scales = "free_y", ncol = 6) +
   # Labels
   labs(
-    x = "Absolute Latitude (°)",
+    x = "Absolute latitude (°)",
     y = "Normalized generic richness"
   ) +
   theme_minimal() +
@@ -100,18 +100,15 @@ LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
 
 gg_path <- sprintf("./figures/%s km %squota %s equal-area latitude bins LDG slopes figure.jpg",
                    params$spacing, params$level, rich_params$n_lat_bins)
-
 ggsave(gg_path, LDG_s_plot, width = 8, height = 9, dpi = 300)
 
 for (stg in unique(rich_df$stage)) {
-  
   df_bin <- subset(rich_df, stage == stg)
   bin <- unique(df_bin$bin_midpoint)
   for (perc in rich_params$percentiles) {
     olsl_data <- ols_lines %>% filter(stage == stg, quantile == perc)
     # Get unique color levels
     color_levels <- unique(df_bin$color)
-
     # Define a fixed color palette, but only use the colors needed
     color_palette <- c("Northern" = "#0072B2", "Southern" = "#E69F00", "Bad hemisphere" = "#D3D3D3")
     color_palette <- color_palette[color_levels]  # Keep only the required colors
@@ -136,8 +133,8 @@ for (stg in unique(rich_df$stage)) {
       ) +
       labs(
         title = sprintf("LDG Slope for %s (%s Ma)- Percentile %s", stg, bin, perc),
-        x = "Absolute Latitude (°)",
-        y = sprintf("Richness (%s)", perc)
+        x = "Absolute latitude (°)",
+        y = sprintf("Generic richness (%s)", perc)
       ) +
       theme_minimal() +
       theme(
@@ -148,7 +145,6 @@ for (stg in unique(rich_df$stage)) {
         axis.title = element_text(size = 12),
         panel.border = element_rect(color = "black", fill = NA, linewidth = 1)
       )
-    print(p)
     # Save the figure
     output_dir <- sprintf("./figures/LDG slope per stage/%s km %squota %s equal_area latitude bins",
                           params$spacing, params$level, rich_params$n_lat_bins)
@@ -168,19 +164,17 @@ for (stg in unique(rich_df$stage)) {
 richness_percentiles <- rich_df %>%
   group_by(bin_midpoint, lat_bin_mid) %>%
   summarise(across(qD_normalized, list(
-    q0 = ~quantile(., 0, na.rm = TRUE),
-    q25 = ~quantile(., 0.25, na.rm = TRUE),
     q50 = ~quantile(., 0.50, na.rm = TRUE),
     q60 = ~quantile(., 0.60, na.rm = TRUE),
     q75 = ~quantile(., 0.75, na.rm = TRUE),
     q90 = ~quantile(., 0.90, na.rm = TRUE),
-    q100 = ~quantile(., 1, na.rm = TRUE)
+    q95 = ~quantile(., 0.95, na.rm = TRUE)
   ), .names = "{.fn}"), .groups = "drop") %>%
   pivot_longer(cols = starts_with("q"), names_to = "percentile", values_to = "richness") %>%
-  mutate(percentile = factor(percentile, levels = c("q0", "q25", "q50", "q60", "q75", "q90", "q100")))
+  mutate(percentile = factor(percentile, levels = c("q50", "q60", "q75", "q90", "q95")))
 
 # Use viridis color scheme (colorblind-friendly)
-percentile_colors <- setNames(viridis(7, option = "D"), c("q0", "q25", "q50", "q60", "q75", "q90", "q100"))
+percentile_colors <- setNames(viridis(5, option = "D"), c("q50", "q60", "q75", "q90", "q95"))
 
 # Plot species richness with faceting
 LDG_fig <- ggplot() +
@@ -230,20 +224,19 @@ for (stg in unique(rich_df$stage)) {
   # Compute richness percentiles
   richness_percentile <- df_bin %>%
     group_by(lat_bin_mid) %>%
-    summarise(across(qD_normalized, list(q0 = ~quantile(., 0, na.rm = TRUE),
-                                         q25 = ~quantile(., 0.25, na.rm = TRUE),
-                                         q50 = ~quantile(., 0.50, na.rm = TRUE),
-                                         q60 = ~quantile(., 0.60, na.rm = TRUE),
-                                         q75 = ~quantile(., 0.75, na.rm = TRUE),
-                                         q90 = ~quantile(., 0.90, na.rm = TRUE),
-                                         q100 = ~quantile(., 1, na.rm = TRUE)),
+    summarise(across(qD_normalized, list(
+      q50 = ~quantile(., 0.50, na.rm = TRUE),
+      q60 = ~quantile(., 0.60, na.rm = TRUE),
+      q75 = ~quantile(., 0.75, na.rm = TRUE),
+      q90 = ~quantile(., 0.90, na.rm = TRUE),
+      q95 = ~quantile(., 0.95, na.rm = TRUE)),
                      .names = "{.fn}")) %>%
     pivot_longer(cols = starts_with("q"), names_to = "percentile", values_to = "richness") %>%
     ungroup() %>%
-    mutate(percentile = factor(percentile, levels = c("q0", "q25", "q50", "q60", "q75", "q90", "q100")))  # Ensure correct legend order
+    mutate(percentile = factor(percentile, levels = c("q50", "q60", "q75", "q90", "q95")))  # Ensure correct legend order
 
   # Use viridis color scheme (colorblind-friendly)
-  percentile_colors <- setNames(viridis(7, option = "D"), c("q0", "q25", "q50", "q60", "q75", "q90", "q100"))
+  percentile_colors <- setNames(viridis(5, option = "D"), c("q50", "q60", "q75", "q90", "q95"))
 
   # Plot species richness
   p <- ggplot() +
@@ -261,7 +254,6 @@ for (stg in unique(rich_df$stage)) {
       axis.title = element_text(size = 12),
       panel.border = element_rect(color = "black", fill = NA, linewidth = 1)
     )
-  print(p)
   # Save the figure
   output_dir <- sprintf("./figures/LDG per stage/%s km %squota %s equal_area latitude bins",
                         params$spacing, params$level, rich_params$n_lat_bins)
