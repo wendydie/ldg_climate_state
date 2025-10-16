@@ -143,6 +143,12 @@ slope_data <- slope_cli_df %>%
   )
 
 # -- 2. Define axis ranges and theme -----------------------
+data(periods)
+data(epochs)
+period_boundaries <- unique(c(periods$max_age, periods$min_age))
+epoch_boundaries <- unique(c(epochs$max_age, epochs$min_age))
+major_boundaries <- periods$max_age
+
 x_max_val <- max(time_bins$max_ma) 
 x_min_val <- min(time_bins$min_ma) 
 
@@ -182,6 +188,10 @@ climate_shade_layer <- list(
 P_north_backcolor <- ggplot(filter(slope_data, slope_type == "Northern"), 
                   aes(x = bin_midpoint, y = slope_value, color = slope_type)) +
   climate_shade_layer +
+  geom_vline(
+    xintercept = major_boundaries,
+    color = "black", linewidth = 0.4, alpha = 0.8
+  ) +
   # Add climate state color bars
   geom_rect(
     data = climate_states, 
@@ -248,6 +258,10 @@ P_north_backcolor <- ggplot(filter(slope_data, slope_type == "Northern"),
 P_south_backcolor <- ggplot(filter(slope_data, slope_type == "Southern"), 
                   aes(x = bin_midpoint, y = slope_value, color = slope_type)) +
   climate_shade_layer +
+  geom_vline(
+    xintercept = major_boundaries,
+    color = "black", linewidth = 0.4, alpha = 0.8
+  ) +
   annotate("rect",
            xmin = -Inf, xmax = Inf,
            ymin = -0.1, ymax = 0.1,
