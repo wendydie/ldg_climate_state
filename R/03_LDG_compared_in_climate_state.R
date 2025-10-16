@@ -16,6 +16,7 @@ library(grid)
 library(patchwork)
 library(cowplot)
 library(deeptime)
+library(ggnewscale)
 source("./R/options.R")
 
 # Wilcoxon signed-rank test analysis in different climate states---------
@@ -167,10 +168,27 @@ climate_labels <- data.frame(
   label = c("Cooler climate", "Warmer climate"),
   hjust = c(1,0)
 )
+climate_shade_layer <- list(
+  geom_rect(
+    data = climate_states,
+    aes(xmin = bottom, xmax = top,
+        ymin = y_min_val, ymax = y_max_val * 1.1,
+        fill = climate_state),
+    inherit.aes = FALSE, alpha = 0.3, colour = NA
+  ),
+  scale_fill_manual(values = climate_colors, guide = "none")
+)
 # -- 3. Draw the figure ----------------------------------
-P_north <- ggplot(filter(slope_data, slope_type == "Northern"), 
+P_north_backcolor <- ggplot(filter(slope_data, slope_type == "Northern"), 
                   aes(x = bin_midpoint, y = slope_value, color = slope_type)) +
-  # Fill the "near zero" range from -0.1 to 0.1 with a light blue rectangle
+  climate_shade_layer +
+  # Add climate state color bars
+  geom_rect(
+    data = climate_states, 
+    aes(xmin = bottom, xmax = top, ymin = y_max_val, ymax = y_max_val * 1.1),
+    fill = I(climate_states$climate_color), 
+    color = "black", linewidth = 0.3, inherit.aes = FALSE
+  ) +
   annotate("rect",
            xmin = -Inf, xmax = Inf,
            ymin = -0.1, ymax = 0.1,
@@ -180,15 +198,6 @@ P_north <- ggplot(filter(slope_data, slope_type == "Northern"),
   geom_line(linewidth = 1) +
   geom_point(aes(shape = abs(slope_value) < 0.1), size = 2) +
   scale_shape_manual(values = c(`TRUE` = 1, `FALSE` = 16)) +
-  # Add climate state color bars
-  geom_rect(data = climate_states, 
-            aes(xmin = bottom, xmax = top, 
-                ymin = y_max_val, 
-                ymax = y_max_val *1.1, 
-                fill = climate_color),
-            linewidth = 0.3, inherit.aes = FALSE) +
-  # Force ggplot2 to use the exact colors in the dataset
-  scale_fill_identity(name = "Climate State", guide = "legend") +
   # Add a black border, enclosing only the data range
   geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val*1.1), 
             color = "black", fill = NA, linewidth = 1) +
@@ -203,14 +212,13 @@ P_north <- ggplot(filter(slope_data, slope_type == "Northern"),
     limits = c(y_min_val, y_max_val*1.1),
     breaks = seq(-3, 2, 1),
     expand = c(0, 0)
-  ) +
+  )  +
   # Set custom colors for slope types
   scale_color_manual(
     values = c("Southern" = "#E69F00", 
                "Northern" = "#0072B2"),
-    labels = c("Southern", "Northern"),
-    guide = "none" 
-  ) +
+    labels = c("Southern", "Northern")
+  )+
   labs(
     x = NULL,
     y = 'Slope value',
@@ -222,6 +230,8 @@ P_north <- ggplot(filter(slope_data, slope_type == "Northern"),
             size = 4, fontface = "bold", hjust = 1)+
   theme_minimal() +
   theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
     axis.title.x = element_blank(),
     axis.text.x = element_blank(),
     axis.title.y = element_text(size = 14),
@@ -235,8 +245,139 @@ P_north <- ggplot(filter(slope_data, slope_type == "Northern"),
     legend.title = element_text(size = 12, face = "bold"),  # Customize legend title
     legend.text = element_text(size = 10)  # Customize legend text
   )
-
-P_south <- ggplot(filter(slope_data, slope_type == "Southern"), 
+P_south_backcolor <- ggplot(filter(slope_data, slope_type == "Southern"), 
+                  aes(x = bin_midpoint, y = slope_value, color = slope_type)) +
+  climate_shade_layer +
+  annotate("rect",
+           xmin = -Inf, xmax = Inf,
+           ymin = -0.1, ymax = 0.1,
+           fill = "lightblue", alpha = 0.3) +
+  geom_hline(yintercept = 0, color="black", linewidth=0.8, linetype = "dashed") + 
+  # Add slope curves for different types
+  geom_line(linewidth = 1) +
+  geom_point(aes(shape = abs(slope_value) < 0.1), size = 2) +
+  scale_shape_manual(values = c(`TRUE` = 1, `FALSE` = 16)) +
+  # Add a black border, enclosing only the data range
+  geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val*1.1), 
+            color = "black", fill = NA, linewidth = 1) +
+  # Set x and y axis ranges
+  scale_x_reverse(
+    name = "Geological time (Ma)",
+    limits = c(x_max_val, 0),
+    breaks = seq(500, 0, -50),
+    expand = c(0, 0)
+  ) +
+  scale_y_continuous(
+    limits = c(y_min_val, y_max_val*1.1),
+    breaks = seq(-3, 2, 1),
+    expand = c(0, 0)
+  )  +
+  # Set custom colors for slope types
+  scale_color_manual(
+    values = c("Southern" = "#E69F00", 
+               "Northern" = "#0072B2"),
+    labels = c("Southern", "Northern")
+  )+
+  labs(
+    x = "Time (Ma)",
+    y = "Slope value",
+    tag = "B"
+  ) +
+  annotate ("text", x = x_text_pos, y = y_max_val*0.85,label="Southern Hemisphere",
+            size = 4, fontface = "bold", hjust = 1)+
+  coord_geo(
+    xlim = c(x_max_val, 0),
+    pos = "bottom",
+    dat = list("periods", "epochs"),
+    height = unit(1.5, "lines")
+  ) + 
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 14),
+    strip.text = element_blank(),  # Remove facet labels
+    strip.background = element_blank(),  # Remove facet label background
+    axis.ticks.x = element_line(color = "black", linewidth = 0.5),
+    axis.ticks.y = element_line(color = "black", linewidth = 0.5),
+    panel.spacing = unit(0.3, "lines"),  # Reduce spacing between facets
+    legend.position = "none"  # Remove redundant legend
+  )
+P_north_pointcolor <- ggplot(filter(slope_data, slope_type == "Northern"), 
+                            aes(x = bin_midpoint, y = slope_value, color = slope_type)) +
+  # Fill the "near zero" range from -0.1 to 0.1 with a light blue rectangle
+  annotate("rect",
+           xmin = -Inf, xmax = Inf,
+           ymin = -0.1, ymax = 0.1,
+           fill = "lightblue", alpha = 0.3) +
+  geom_hline(yintercept = 0, color="black", linewidth=0.8, linetype = "dashed") + 
+  # Add slope curves for different types
+  geom_line(aes(color = slope_type), linewidth = 1) +
+  # Set custom colors for slope types
+  scale_color_manual(
+    values = c("Southern" = "#E69F00", 
+               "Northern" = "#0072B2"),
+    labels = c("Southern", "Northern"),
+    guide = "none" 
+  )  +
+  ggnewscale::new_scale_color() +
+  geom_point(aes(color = climate_state, shape = abs(slope_value) < 0.1), size = 2) +
+  scale_shape_manual(values = c(`TRUE` = 1, `FALSE` = 16)) +
+  scale_color_manual(
+    values = climate_colors,
+    name = "Climate state"
+  ) +
+  # Force ggplot2 to use the exact colors in the dataset
+  scale_fill_identity() +
+  # Add a black border, enclosing only the data range
+  geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val*1.1), 
+            color = "black", fill = NA, linewidth = 1) +
+  # Add climate state color bars
+  geom_rect(
+    data = climate_states, 
+    aes(xmin = bottom, xmax = top, ymin = y_max_val, ymax = y_max_val * 1.1),
+    fill = I(climate_states$climate_color), 
+    color = "black", linewidth = 0.3, inherit.aes = FALSE
+  ) +
+  # Set x and y axis ranges
+  scale_x_reverse(
+    limits = c(x_max_val, 0),
+    breaks = seq(500, 0, -50),
+    expand = c(0, 0)
+  ) +
+  scale_y_continuous(
+    limits = c(y_min_val, y_max_val*1.1),
+    breaks = seq(-3, 2, 1),
+    expand = c(0, 0)
+  )  +
+  labs(
+    x = NULL,
+    y = 'Slope value',
+    tag = "A"
+  )+
+  # annotate ("text", x = 540, y = y_max_val*0.85,label="A",
+  #           size = 4, fontface = "bold")+
+  annotate ("text", x = x_text_pos, y = y_max_val*0.85,label="Northern Hemisphere",
+            size = 4, fontface = "bold", hjust = 1)+
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.title.y = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    strip.text = element_blank(),  # Remove facet labels
+    strip.background = element_blank(),  # Remove facet label background
+    axis.ticks.x = element_line(color = "black", linewidth = 0.5),
+    axis.ticks.y = element_line(color = "black", linewidth = 0.5),
+    panel.spacing = unit(0.3, "lines"),  # Reduce spacing between facets
+    legend.position = 'none',  # Remove redundant legend
+    legend.title = element_text(size = 12, face = "bold"),  # Customize legend title
+    legend.text = element_text(size = 10)  # Customize legend text
+  )
+P_south_pointcolor <- ggplot(filter(slope_data, slope_type == "Southern"), 
              aes(x = bin_midpoint, y = slope_value, color = slope_type)) +
   # Fill the "near zero" range from -0.1 to 0.1 with a light blue rectangle
   annotate("rect",
@@ -245,19 +386,21 @@ P_south <- ggplot(filter(slope_data, slope_type == "Southern"),
            fill = "lightblue", alpha = 0.3) +
   geom_hline(yintercept = 0, color="black", linewidth=0.8, linetype = "dashed") + 
   # Add slope curves for different types
-  geom_line(linewidth = 1) +
-  # **Use geom_smooth() for smoother lines**
-  # geom_smooth(method = "loess", se = FALSE, linewidth = 1.2, span = 0.3) +  # Loess smoothing
-  
-  geom_point(aes(shape = abs(slope_value) < 0.1), size = 2) +
+  geom_line(aes(color = slope_type), linewidth = 1) +
+  # Set custom colors for slope types
+  scale_color_manual(
+    values = c("Southern" = "#E69F00", 
+               "Northern" = "#0072B2"),
+    labels = c("Southern", "Northern"),
+    guide = "none" 
+  )  +
+  ggnewscale::new_scale_color() +
+  geom_point(aes(color = climate_state, shape = abs(slope_value) < 0.1), size = 2) +
   scale_shape_manual(values = c(`TRUE` = 1, `FALSE` = 16)) +
-  # geom_rect(data = climate_legend, 
-  #           aes(xmin = min_ma, xmax = max_ma, ymin = y * 0.8, ymax = y * 0.85, fill = climate_color),
-  #           inherit.aes = FALSE) +
-  # # Add "Cooler Climate" & "Warmer Climate" labels (ONLY in the first facet)
-  # geom_text(data = climate_labels, 
-  #           aes(x = x, y = y, label = label, hjust=hjust),
-  #           size = 4,  inherit.aes = FALSE) +
+  scale_color_manual(
+    values = climate_colors,
+    name = "Climate state"
+  ) +
   # Force ggplot2 to use the exact colors in the dataset
   scale_fill_identity() +
   # Add a black border, enclosing only the data range
@@ -273,13 +416,7 @@ P_south <- ggplot(filter(slope_data, slope_type == "Southern"),
     limits = c(y_min_val, y_max_val),
     breaks = seq(-3, 2, 1),
     expand = c(0, 0)
-  ) +
-  # Set custom colors for slope types
-  scale_color_manual(
-    values = c("Southern" = "#E69F00", 
-               "Northern" = "#0072B2"),
-    labels = c("Southern", "Northern")
-  ) +
+  )  +
   labs(
     x = "Time (Ma)",
     y = "Slope value",
@@ -297,6 +434,8 @@ P_south <- ggplot(filter(slope_data, slope_type == "Southern"),
   ) + 
   theme_minimal() +
   theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
     axis.title = element_text(size = 14),
     axis.text = element_text(size = 14),
     strip.text = element_blank(),  # Remove facet labels
@@ -307,18 +446,6 @@ P_south <- ggplot(filter(slope_data, slope_type == "Southern"),
     legend.position = "none"  # Remove redundant legend
   )
 
-# climate_bar <- ggplot() +
-#   geom_rect(data = climate_legend, 
-#             aes(xmin = min_ma, xmax = max_ma, ymin = 0.8, ymax = 0.85, fill = climate_color)) +
-#   geom_text(data = climate_labels, 
-#             aes(x = x, y = 0.83, label = label, hjust = hjust),
-#             size = 4) +
-#   scale_x_reverse(limits = c(x_max_val, 0)) +
-#   scale_fill_identity() +
-#   theme_void() +
-#   theme(
-#     plot.margin = margin(0, 10, 0, 10)
-#   ) 
 climate_bar <- ggplot(climate_legend, aes(x = 0, y = 0, fill = climate_state)) +
   # Invisible points to trigger the legend (not plotted on canvas)
   geom_point(shape = 22, size = 5, alpha = 0) +
@@ -342,24 +469,36 @@ climate_bar <- ggplot(climate_legend, aes(x = 0, y = 0, fill = climate_state)) +
 # Extract only the legend as a grob
 climate_legend_grob <- cowplot::get_legend(climate_bar)
 # -- 4. Combine plots and print ---------------------------
-slope_vTime_plot <- ((P_north / P_south) / climate_legend_grob) +
+slope_vTime_plot_backcolor <- ((P_north_backcolor / P_south_backcolor) / climate_legend_grob) +
   plot_layout(heights = c(10, 10, 1)) &
   theme(
     plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"),
     panel.spacing = unit(0, "cm")
   )
-
+slope_vTime_plot_pointcolor <- ((P_north_pointcolor / P_south_pointcolor) / climate_legend_grob) +
+  plot_layout(heights = c(10, 10, 1)) &
+  theme(
+    plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"),
+    panel.spacing = unit(0, "cm")
+  )
 # Display the plot
-print(slope_vTime_plot)
+print(slope_vTime_plot_backcolor)
+print(slope_vTime_plot_pointcolor)
 # print(final_plot)
-sT_path_jpg <- sprintf("./figures/jpg/%skm %squota %s equal-area latitude bins time series.jpg", 
+sT_path_jpg <- sprintf("./figures/jpg/background color %skm %squota %s equal-area latitude bins time series.jpg", 
                   params$spacing, params$level, rich_params$n_lat_bins)
-ggsave(sT_path_jpg, slope_vTime_plot, width = 8, height = 7, dpi = 300)
+ggsave(sT_path_jpg, slope_vTime_plot_backcolor, width = 8, height = 7, dpi = 300)
 
-sT_path_pdf <- sprintf("./figures/pdf/%skm %squota %s equal-area latitude bins time series.pdf", 
+sT_path_pdf <- sprintf("./figures/pdf/background color %skm %squota %s equal-area latitude bins time series.pdf", 
                    params$spacing, params$level, rich_params$n_lat_bins)
-ggsave(sT_path_pdf, slope_vTime_plot, width = 8, height = 7, dpi = 300)
+ggsave(sT_path_pdf, slope_vTime_plot_backcolor, width = 8, height = 7, dpi = 300)
+sT_path_jpg <- sprintf("./figures/jpg/point color %skm %squota %s equal-area latitude bins time series.jpg", 
+                       params$spacing, params$level, rich_params$n_lat_bins)
+ggsave(sT_path_jpg, slope_vTime_plot_pointcolor, width = 8, height = 7, dpi = 300)
 
+sT_path_pdf <- sprintf("./figures/pdf/point color %skm %squota %s equal-area latitude bins time series.pdf", 
+                       params$spacing, params$level, rich_params$n_lat_bins)
+ggsave(sT_path_pdf, slope_vTime_plot_pointcolor, width = 8, height = 7, dpi = 300)
 #-------------------------------------------------------------------------
 # Drawing the boxplot of slope of LDG in different climate states---------
 # Filter LDG slope
