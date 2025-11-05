@@ -1,7 +1,7 @@
 # Header ----------------------------------------------------------------
 # Project: LDG_climate_state
-# File name: 02_LDG_sope_fig2.R
-# Last updated: 2025-01-21
+# File name: 02_LDG_slope_fig2.R
+# Last updated: 2025-10-15
 # Author: Lewis A. Jones; Die (Wendy) Wen
 # Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
 # Repository: https://github.com/wendydie/LDG_climate_state

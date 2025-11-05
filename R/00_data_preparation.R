@@ -1,7 +1,7 @@
 # Header ----------------------------------------------------------------
 # Project: LDG_climate_state
 # File name: 00_data_preparation.R
-# Last updated: 2025-01-21
+# Last updated: 2025-10-15
 # Author: Lewis A. Jones; Die (Wendy) Wen
 # Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
 # Repository: https://github.com/wendydie/LDG_climate_state
@@ -80,52 +80,6 @@ bins <- bins %>%
 saveRDS(object = bins, file = "./data/time_bins.RDS")
 
 # # Data cleaning and processing -----------------------------------------
-# # Clean up age assignments
-# # Remove any regular prefixes (Early, Middle, Late)
-# occdf$early_interval <- gsub(pattern = "Early ",
-#                              replacement = "",
-#                              x = occdf$early_interval)
-# occdf$late_interval <- gsub(pattern = "Early ",
-#                             replacement = "",
-#                             x = occdf$late_interval)
-# occdf$early_interval <- gsub(pattern = "Middle ",
-#                              replacement = "",
-#                              x = occdf$early_interval)
-# occdf$late_interval <- gsub(pattern = "Middle ",
-#                             replacement = "",
-#                             x = occdf$late_interval)
-# occdf$early_interval <- gsub(pattern = "Late ",
-#                              replacement = "",
-#                              x = occdf$early_interval)
-# occdf$late_interval <- gsub(pattern = "Late ",
-#                             replacement = "",
-#                             x = occdf$late_interval)
-# 
-# # Add required columns for look_up()
-# bins$early_stage <- bins$interval_name
-# bins$late_stage <- bins$interval_name
-# # Look up ages for intervals names using GTS2023/08
-# # Add ages
-# occdf <- look_up(occdf = occdf,
-#                  early_interval = "early_interval",
-#                  late_interval = "late_interval",
-#                  int_key = bins,
-#                  assign_with_GTS = FALSE)
-# # Which intervals could not be looked up?
-# vec_max <- which(is.na(occdf$interval_max_ma))
-# vec_min <- which(is.na(occdf$interval_min_ma))
-# # Use original input ages
-# occdf$interval_max_ma[vec_max] <- occdf$max_ma[vec_max]
-# occdf$interval_min_ma[vec_min] <- occdf$min_ma[vec_min]
-# occdf$early_stage[vec_max] <- occdf$early_interval[vec_max]
-# occdf$late_stage[vec_min] <- occdf$late_interval[vec_min]
-# # Replace max_ma and min_ma ages
-# occdf$max_ma <- occdf$interval_max_ma
-# occdf$min_ma <- occdf$interval_min_ma
-# # Calculate interval_mid_ma
-# occdf$interval_mid_ma <- (occdf$interval_max_ma + occdf$interval_min_ma) / 2
-# # Remove any collections with a large age range (> 50 Myr) 575909
-# occdf <- occdf[-which(abs(occdf$max_ma - occdf$min_ma) > 50), ]
 
 # Remove suffixes from genus names
 occdf$genus <- sub(" .*", "", occdf$genus)

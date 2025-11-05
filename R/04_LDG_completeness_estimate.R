@@ -1,7 +1,7 @@
 # Header ----------------------------------------------------------------
 # Project: LDG_climate_state
 # File name: 04_LDG_completeness_estimate.R
-# Last updated: 2025-01-21
+# Last updated: 2025-10-15
 # Author: Lewis A. Jones; Die (Wendy) Wen
 # Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
 # Repository: https://github.com/wendydie/LDG_climate_state
@@ -16,6 +16,7 @@ rich_df <- read.csv(sprintf("./results/LDG/%s_cell_%s_richness.csv",
                             params$spacing, params$level))
 time_bins <- readRDS("./data/time_bins.RDS")  # Load time bin information
 lat_bins <- palaeoverse::lat_bins_area(n = 12) %>% arrange(min)
+
 # Step 1: Data Processing --------------------------------------------------
 # Only keep data where bin_midpoint < 486.85 (to match climate state data)
 rich_df$stage <- time_bins$interval_name[match(rich_df$bin_midpoint, time_bins$mid_ma)]

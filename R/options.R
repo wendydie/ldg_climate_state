@@ -1,3 +1,11 @@
+# Header ----------------------------------------------------------------
+# Project: LDG_climate_state
+# File name: options.R
+# Last updated: 2025-10-15
+# Author: Lewis A. Jones; Die (Wendy) Wen
+# Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
+# Repository: https://github.com/wendydie/LDG_climate_state
+# -----------------------------------------------------------------------
 
 # Parameters and options for analyses
 params <- list(

@@ -1,3 +1,11 @@
+# Header ----------------------------------------------------------------
+# Project: LDG_climate_state
+# File name: 00_data_distribution_map.R
+# Last updated: 2025-10-15
+# Author: Lewis A. Jones; Die (Wendy) Wen
+# Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
+# Repository: https://github.com/wendydie/LDG_climate_state
+# -----------------------------------------------------------------------
 # Load necessary libraries
 library(ggplot2)
 library(rnaturalearth)
