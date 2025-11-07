@@ -180,7 +180,7 @@ climate_shade_layer <- list(
     aes(xmin = bottom, xmax = top,
         ymin = y_min_val, ymax = y_max_val * 1.1,
         fill = I(climate_states$climate_color)),
-    inherit.aes = FALSE, alpha = 0.3, colour = NA
+    inherit.aes = FALSE, alpha = 0.6, colour = NA
   )
 )
 # -- 3. Draw the figure ----------------------------------
@@ -444,7 +444,8 @@ boxplot <- ggplot(slope_flag, aes(x = state_with_n, y = slope_value, fill = slop
   # Minimal theme with some customizations
   theme_minimal() +                                       
   theme(axis.title = element_text(size = 14),                            
-        axis.text = element_text(size = 12),                              
+        axis.text = element_text(size = 12),
+        axis.ticks = element_line(color = "black", linewidth=0.6),
         legend.title = element_text(size = 12),                         
         legend.text = element_text(size = 10),                         
         panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
