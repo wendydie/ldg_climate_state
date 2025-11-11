@@ -2,8 +2,8 @@
 # Project: LDG_climate_state
 # File name: 02_LDG_slope.R
 # Last updated: 2025-01-21
-# Author: Lewis A. Jones; Die (Wendy) Wen
-# Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
+# Author: Die (Wendy) Wen
+# Email: geowendywen@outlook.com
 # Repository: https://github.com/wendydie/LDG_climate_state
 # -----------------------------------------------------------------------
 # Load libraries and options --------------------------------------------

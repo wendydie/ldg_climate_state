@@ -2,8 +2,8 @@
 # Project: LDG_climate_state
 # File name: 02_LDG_slope_fig.R
 # Last updated: 2025-10-15
-# Author: Lewis A. Jones; Die (Wendy) Wen
-# Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
+# Author: Die (Wendy) Wen
+# Email: geowendywen@outlook.com
 # Repository: https://github.com/wendydie/LDG_climate_state
 # -----------------------------------------------------------------------
 # Load libraries and options --------------------------------------------
@@ -80,7 +80,7 @@ LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
              scales = "free_y", ncol = 6) +
   # Labels
   labs(
-    x = "Absolute latitude (°)",
+    x = "Absolute paleolatitude (°)",
     y = "Normalized generic richness"
   ) +
   theme_minimal() +
@@ -97,7 +97,7 @@ LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
     axis.title.y = element_text(size = 12, color = "black", angle = 90),  # Show y-axis title
     legend.position = "bottom"  # Remove redundant legend
   )
-
+print(LDG_s_plot)
 gg_path <- sprintf("./figures/%s km %squota %s equal-area latitude bins LDG slopes figure.jpg",
                    params$spacing, params$level, rich_params$n_lat_bins)
 ggsave(gg_path, LDG_s_plot, width = 8, height = 9, dpi = 300)
@@ -132,8 +132,8 @@ for (stg in unique(rich_df$stage)) {
         linetype = "none"
       ) +
       labs(
-        title = sprintf("LDG Slope for %s (%s Ma)- Percentile %s", stg, bin, perc),
-        x = "Absolute latitude (°)",
+        title = sprintf("LDG slope for %s (%s Ma)- percentile %s", stg, bin, perc),
+        x = "Absolute paleolatitude (°)",
         y = sprintf("Generic richness (%s)", perc)
       ) +
       theme_minimal() +
@@ -174,16 +174,19 @@ richness_percentiles <- rich_df %>%
   mutate(percentile = factor(percentile, levels = c("q50", "q60", "q75", "q90", "q95")))
 
 # Use viridis color scheme (colorblind-friendly)
-percentile_colors <- setNames(viridis(5, option = "D"), c("q50", "q60", "q75", "q90", "q95"))
+# percentile_colors <- setNames(viridis(5, option = "D"), c("q50", "q60", "q75", "q90", "q95"))
+percentile_colors <- setNames(gray.colors(5, start = 0.8, end=0.1),
+                              c("q50", "q60", "q75", "q90", "q95"))
 
 # Plot species richness with faceting
 LDG_fig <- ggplot() +
-  geom_point(data = rich_df, aes(x = cell_lat, y = qD_normalized), color = "black", alpha = 0.5) +  # Raw richness data
-  geom_line(data = richness_percentiles, aes(x = lat_bin_mid, y = richness, color = percentile, group = percentile), linewidth = 1) +
+  geom_point(data = rich_df, aes(x = cell_lat, y = qD_normalized), size= 0.6, color = "black", alpha = 0.3) +  # Raw richness data
+  geom_line(data = richness_percentiles, 
+            aes(x = lat_bin_mid, y = richness, color = percentile, group = percentile),
+            alpha = 0.6, linewidth = 1) +
   scale_color_manual(name = "Percentile", values = percentile_colors) +
-  labs(x = "Latitude",
+  labs(x = "Paleolatitude",
        y = "Normalized generic richness") +
-  
   # Facet by bin_midpoint with stage names
   facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
              labeller = as_labeller(function(x) paste0(rich_df$stage[match(x, rich_df$bin_midpoint)])),
@@ -209,8 +212,9 @@ LDG_fig <- ggplot() +
     axis.title.x = element_text(size = 12, color = "black"),  # Show x-axis title
     axis.text.y = element_text(size = 8, color = "black"),  # Show y-axis labels on the left
     axis.title.y = element_text(size = 12, color = "black", angle = 90),  # Show y-axis title
-    legend.position = "right"
+    legend.position = "bottom"
   )
+print(LDG_fig)
 # Save the faceted figure
 LDG_f_path <- sprintf("./figures/LDG_per_stage_facet_%s_km_%s_quota %s_euqal_area_latitude_bins.jpg",
                        params$spacing, params$level,rich_params$n_lat_bins)
@@ -234,17 +238,13 @@ for (stg in unique(rich_df$stage)) {
     pivot_longer(cols = starts_with("q"), names_to = "percentile", values_to = "richness") %>%
     ungroup() %>%
     mutate(percentile = factor(percentile, levels = c("q50", "q60", "q75", "q90", "q95")))  # Ensure correct legend order
-
-  # Use viridis color scheme (colorblind-friendly)
-  percentile_colors <- setNames(viridis(5, option = "D"), c("q50", "q60", "q75", "q90", "q95"))
-
   # Plot species richness
   p <- ggplot() +
     geom_point(data = df_bin, aes(x = cell_lat, y = qD_normalized), color = "black", alpha = 0.5) +  # Raw richness data
     geom_line(data = richness_percentile, aes(x = lat_bin_mid, y = richness, color = percentile, group = percentile), size = 1) +
     scale_color_manual(name = "Percentile", values = percentile_colors) +
-    labs(title = sprintf("Genus Richness vs. Latitude %s (%s Ma)", stg, bin),
-         x = "Latitude",
+    labs(title = sprintf("Genus Richness vs. paleolatitude %s (%s Ma)", stg, bin),
+         x = "Paleolatitude",
          y = "Normalized richness") +
     theme_minimal() +
     theme(

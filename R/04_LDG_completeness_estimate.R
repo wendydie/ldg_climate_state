@@ -2,8 +2,8 @@
 # Project: LDG_climate_state
 # File name: 04_LDG_completeness_estimate.R
 # Last updated: 2025-10-15
-# Author: Lewis A. Jones; Die (Wendy) Wen
-# Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
+# Author: Die (Wendy) Wen
+# Email: geowendywen@outlook.com
 # Repository: https://github.com/wendydie/LDG_climate_state
 # -----------------------------------------------------------------------
 # Load required libraries
@@ -86,7 +86,7 @@ stacked_bar_plot <- ggplot(rich_df2, aes(x = cell_lat, fill = completeness)) +
   # Equator & Baseline Lines
   geom_vline(xintercept = 0, color = "red", linetype = "solid", linewidth = 1) +  
   # Axis Labels
-  labs(x = "Latitude", y = "Cell Count", fill = "Completeness") +
+  labs(x = "Paleolatitude", y = "Cell number", fill = "Completeness") +
   # Facet by 'stage' (bin_midpoint), sorted in descending order
   facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
              labeller = as_labeller(function(x) 

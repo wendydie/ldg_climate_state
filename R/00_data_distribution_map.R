@@ -2,8 +2,8 @@
 # Project: LDG_climate_state
 # File name: 00_data_distribution_map.R
 # Last updated: 2025-10-15
-# Author: Lewis A. Jones; Die (Wendy) Wen
-# Email: lewis.jones@ucl.ac.uk; geowendywen@outlook.com
+# Author: Die (Wendy) Wen
+# Email: geowendywen@outlook.com
 # Repository: https://github.com/wendydie/LDG_climate_state
 # -----------------------------------------------------------------------
 # Load necessary libraries
@@ -23,7 +23,9 @@ if (params$clean_again || !file.exists("./data/processed/pbdb_data.RDS")){
 time_bins <- readRDS("./data/time_bins.RDS")
 # Get the modern world map (landmasses) as an sf object
 world <- ne_countries(scale = "medium", returnclass = "sf")
-
+# base_map_path <- sprintf("data/SC16/tmp/static_polygons_reconstructed_%sMa.shp", 250)
+# if (!file.exists(base_map_path)) stop(paste("Base map file not found:", base_map_path))
+# world  <- st_read(base_map_path)
 # Define Mollweide projection
 moll_crs <- "+proj=moll"
 
@@ -58,9 +60,7 @@ coll_map <- ggplot() +
   # Add graticules (latitude and longitude grid)
   geom_sf(data = st_graticule(crs = moll_crs), color = "gray60", linetype = "dashed", size = 0.2) +
   # Set labels for the plot
-  labs(x = "Longitude",
-       y = "Latitude",
-       color = "Age (Ma)") +  # Change legend title to reflect Age in Ma
+  labs(color = "Age (Ma)") +  # Change legend title to reflect Age in Ma
   # Use a continuous color gradient (heatmap style)
   scale_color_viridis_c(option = "inferno", direction = -1, na.value = "grey50") +  
   # Adjust coordinate scaling with Mollweide projection and grid lines
@@ -74,7 +74,7 @@ coll_map <- ggplot() +
     axis.title.x = element_text(size = 12, color = "black"),  
     axis.text.y = element_blank(),  # Show y-axis (Latitude)
     axis.title.y = element_text(size = 12, color = "black", angle = 90),  
-    legend.position = "right",
+    legend.position = "bottom",
     plot.margin = margin(10,10,10,10)
   )
 print(coll_map)
@@ -118,8 +118,7 @@ for (bin in unique_bins) {
     geom_sf(data = st_graticule(crs = moll_crs), color = "gray60", linetype = "dashed", size = 0.2) +
     
     # Set the title with bin_midpoint and stage name
-    labs(title = paste0("Fossil Collections at ", bin, " Ma (", stage_value, ")"),
-         x = "Longitude", y = "Latitude") +
+    labs(title = paste0("Fossil Collections at ", bin, " Ma (", stage_value, ")")) +
     # Apply Mollweide projection
     coord_sf(crs = moll_crs, expand = FALSE) +
     # Minimalistic theme and adjustments
@@ -139,4 +138,3 @@ for (bin in unique_bins) {
   ggsave(output_file, plot = map_plot, width = 10, height = 5, dpi = 150)
   print(paste("Saved:", output_file))  # Print progress
 }
-
