@@ -16,12 +16,12 @@ rich_params <- list(
 
 )
 source("./R/02_LDG_slope.R")
-# source("./R/02_LDG_slope_sensitivity_test.R")
+source("./R/02_LDG_slope_sensitivity_test.R")
 source("./R/02_LDG_slope_fig.R")
-# source("./R/02_LDG_slope_fig2.R")
-# source("./R/02_LDG_slope_fig3.R")
-# source("./R/03_LDG_compared_in_climate_state.R")
-# source("./R/03_LDG_sensitivity_test.R")
+source("./R/02_LDG_slope_fig2.R")
+source("./R/02_LDG_slope_fig3.R")
+source("./R/03_LDG_compared_in_climate_state.R")
+source("./R/03_LDG_sensitivity_test.R")
 
 rich_params <- list(
   # Define the list of percentiles to be calculated
@@ -30,12 +30,12 @@ rich_params <- list(
 
 )
 source("./R/02_LDG_slope.R")
-# source("./R/02_LDG_slope_sensitivity_test.R")
+source("./R/02_LDG_slope_sensitivity_test.R")
 source("./R/02_LDG_slope_fig.R")
-# source("./R/02_LDG_slope_fig2.R")
-# source("./R/02_LDG_slope_fig3.R")
-# source("./R/03_LDG_compared_in_climate_state.R")
-# source("./R/03_LDG_sensitivity_test.R")
+source("./R/02_LDG_slope_fig2.R")
+source("./R/02_LDG_slope_fig3.R")
+source("./R/03_LDG_compared_in_climate_state.R")
+source("./R/03_LDG_sensitivity_test.R")
 
 rich_params <- list(
   # Define the list of percentiles to be calculated
@@ -44,12 +44,12 @@ rich_params <- list(
 
 )
 source("./R/02_LDG_slope.R")
-# source("./R/02_LDG_slope_sensitivity_test.R")
+source("./R/02_LDG_slope_sensitivity_test.R")
 source("./R/02_LDG_slope_fig.R")
-# source("./R/02_LDG_slope_fig2.R")
-# source("./R/02_LDG_slope_fig3.R")
-# source("./R/03_LDG_compared_in_climate_state.R")
-# source("./R/03_LDG_sensitivity_test.R")
+source("./R/02_LDG_slope_fig2.R")
+source("./R/02_LDG_slope_fig3.R")
+source("./R/03_LDG_compared_in_climate_state.R")
+source("./R/03_LDG_sensitivity_test.R")
 
 rich_params <- list(
   # Define the list of percentiles to be calculated
@@ -58,9 +58,9 @@ rich_params <- list(
 
 )
 source("./R/02_LDG_slope.R")
-# source("./R/02_LDG_slope_sensitivity_test.R")
+source("./R/02_LDG_slope_sensitivity_test.R")
 source("./R/02_LDG_slope_fig.R")
-# source("./R/02_LDG_slope_fig2.R")
-# source("./R/02_LDG_slope_fig3.R")
-# source("./R/03_LDG_compared_in_climate_state.R")
-# source("./R/03_LDG_sensitivity_test.R")
+source("./R/02_LDG_slope_fig2.R")
+source("./R/02_LDG_slope_fig3.R")
+source("./R/03_LDG_compared_in_climate_state.R")
+source("./R/03_LDG_sensitivity_test.R")

@@ -49,7 +49,7 @@ combined_rich_fig <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized, color =
   ) +
   facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
              labeller = as_labeller(function(x) paste0(rich_df$stage[match(x, rich_df$bin_midpoint)])),
-             scales = "free_y", ncol = 6) +
+             ncol = 6) +
   # Facet by bin_midpoint with 8 columns
   scale_y_continuous(
     breaks = function(y) {
@@ -68,7 +68,8 @@ combined_rich_fig <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized, color =
   theme(
     strip.text = element_text(size = 8, face = "bold", margin = margin(1,1,1,1)),
     strip.placement = "inside",
-    panel.spacing = unit(0.01, "lines"),
+    panel.spacing.x = unit(0.5, "lines"),
+    panel.spacing.y = unit(0.01, "lines"),
     panel.border = element_rect(color = "black", fill = NA, linewidth = 1),
     panel.grid = element_blank(),
     axis.text.x = element_text(size = 8, color = "black"),  # Show x-axis labels at the bottom

@@ -88,7 +88,7 @@ make_hemi_plot <- function(rich_side, long_side, lines_side, hemi_title) {
     facet_wrap(
       ~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
       labeller = as_labeller(stage_labeller),
-      scales = "free_y", ncol = 6
+      ncol = 6
     ) +
     labs(
       title = hemi_title,
@@ -99,7 +99,8 @@ make_hemi_plot <- function(rich_side, long_side, lines_side, hemi_title) {
     theme(
       strip.text      = element_text(size = 8, face = "bold", margin = margin(1, 1, 1, 1)),
       strip.placement = "inside",
-      panel.spacing   = unit(0.01, "lines"),
+      panel.spacing.x = unit(0.5, "lines"),
+      panel.spacing.y = unit(0.01, "lines"),
       panel.border    = element_rect(color = "black", fill = NA, linewidth = 1),
       panel.grid      = element_blank(),
       axis.text.x     = element_text(size = 8, color = "black"),

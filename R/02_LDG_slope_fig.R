@@ -77,7 +77,7 @@ LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
   )  +
   facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
              labeller = as_labeller(function(x) paste0(rich_df$stage[match(x, rich_df$bin_midpoint)])),
-             scales = "free_y", ncol = 6) +
+             ncol = 6) +
   # Labels
   labs(
     x = "Absolute paleolatitude (°)",
@@ -89,6 +89,7 @@ LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
     strip.text = element_text(size = 8, face = "bold", margin = margin(1,1,1,1)),
     strip.placement = "inside",
     panel.spacing = unit(0.01, "lines"),
+    panel.spacing.x = unit(0.5, "lines"),
     panel.border = element_rect(color = "black", fill = NA, linewidth = 1),
     panel.grid = element_blank(),
     axis.text.x = element_text(size = 8, color = "black"),  # Show x-axis labels at the bottom
@@ -127,6 +128,10 @@ for (stg in unique(rich_df$stage)) {
       scale_color_manual(name = "LDG slope", values = color_palette) +  # Dynamically adjust colors
       scale_linetype_manual(name = "Legend", values = c("Northern" = "solid",
                                                         "Southern" = "solid")) +
+      scale_x_continuous(
+        limits = c(0, 90),
+        expand = c(0, 0)
+      )  +
       guides(
         color = guide_legend(override.aes = list(color = unname(color_palette))),
         linetype = "none"
@@ -175,22 +180,22 @@ richness_percentiles <- rich_df %>%
 
 # Use viridis color scheme (colorblind-friendly)
 # percentile_colors <- setNames(viridis(5, option = "D"), c("q50", "q60", "q75", "q90", "q95"))
-percentile_colors <- setNames(gray.colors(5, start = 0.8, end=0.1),
-                              c("q50", "q60", "q75", "q90", "q95"))
+# percentile_colors <- setNames(gray.colors(5, start = 0.8, end=0.1),
+#                               c("q50", "q60", "q75", "q90", "q95"))
 
 # Plot species richness with faceting
 LDG_fig <- ggplot() +
   geom_point(data = rich_df, aes(x = cell_lat, y = qD_normalized), size= 0.6, color = "black", alpha = 0.3) +  # Raw richness data
   geom_line(data = richness_percentiles, 
             aes(x = lat_bin_mid, y = richness, color = percentile, group = percentile),
-            alpha = 0.6, linewidth = 1) +
-  scale_color_manual(name = "Percentile", values = percentile_colors) +
+            alpha = 0.6, linewidth = 0.8) +
+  # scale_color_manual(name = "Percentile", values = percentile_colors) +
   labs(x = "Paleolatitude",
        y = "Normalized generic richness") +
   # Facet by bin_midpoint with stage names
   facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
              labeller = as_labeller(function(x) paste0(rich_df$stage[match(x, rich_df$bin_midpoint)])),
-             scales = "free_y", ncol = 6) +
+             ncol = 6) +
   
   # Facet by bin_midpoint with 8 columns
   scale_y_continuous(
@@ -205,7 +210,8 @@ LDG_fig <- ggplot() +
   theme(
     strip.text = element_text(size = 8, face = "bold", margin = margin(1,1,1,1)),
     strip.placement = "inside",
-    panel.spacing = unit(0.01, "lines"),
+    panel.spacing.y = unit(0.01, "lines"),
+    panel.spacing.x = unit(0.5, "lines"),
     panel.border = element_rect(color = "black", fill = NA, linewidth = 1),
     panel.grid = element_blank(),
     axis.text.x = element_text(size = 8, color = "black"),  # Show x-axis labels at the bottom
@@ -242,8 +248,12 @@ for (stg in unique(rich_df$stage)) {
   p <- ggplot() +
     geom_point(data = df_bin, aes(x = cell_lat, y = qD_normalized), color = "black", alpha = 0.5) +  # Raw richness data
     geom_line(data = richness_percentile, aes(x = lat_bin_mid, y = richness, color = percentile, group = percentile), size = 1) +
-    scale_color_manual(name = "Percentile", values = percentile_colors) +
-    labs(title = sprintf("Genus Richness vs. paleolatitude %s (%s Ma)", stg, bin),
+    # scale_color_manual(name = "Percentile", values = percentile_colors) +
+    scale_x_continuous(
+      limits = c(-90, 90),
+      expand = c(0, 0)
+    )  +
+    labs(title = sprintf("Genus Richness in %s (%s Ma)", stg, bin),
          x = "Paleolatitude",
          y = "Normalized richness") +
     theme_minimal() +

@@ -82,7 +82,7 @@ test_results <- map_df(climate_pairs, function(pair) {
     shapiro_p2 = shapiro2_p
   )
 })
-
+print(test_results)
 test_path <- sprintf("./results/%skm %squota %s equal-area latitude bins selection of climate states.csv", 
                      params$spacing, params$level, rich_params$n_lat_bins)
 write.csv(test_results, test_path, row.names = FALSE)

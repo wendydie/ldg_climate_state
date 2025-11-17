@@ -34,8 +34,8 @@ slope_data <- slope_cli_df %>%
 #   "q90" = "#D62728",   # Red
 #   "q95" = "#9467BD"    # Purple
 # )
-quantile_colors <- setNames(gray.colors(5, start = 0.8, end=0.1),
-                            c("q50", "q60", "q75", "q90", "q95"))
+# quantile_colors <- setNames(gray.colors(5, start = 0.8, end=0.1),
+#                             c("q50", "q60", "q75", "q90", "q95"))
 # -- 2. Define axis ranges and theme -----------------------
 x_max_val <- max(time_bins$min_ma) 
 x_min_val <- min(time_bins$max_ma) 
@@ -53,20 +53,20 @@ P_north_sensitivity <- ggplot(filter(slope_data, slope_type == "Northern"),
     color = "black", linewidth = 0.4, alpha = 0.8
   ) +
   # Add slope curves for different types
-  geom_line(linewidth = 1) +
+  geom_line(alpha = 0.6, linewidth = 0.8) +
   geom_point(
     aes(shape = abs(slope_value) < 0.1),
-    size = 2, stroke = 0.55
+    size = 2, stroke = 0.55, alpha = 0.6
   ) +
   scale_shape_manual(values = c(`TRUE` = 1, `FALSE` = 16)) +
-  scale_color_manual(
-    name = "Percentile",
-    values = quantile_colors
-  ) +
+  # scale_color_manual(
+  #   name = "Percentile",
+  #   values = quantile_colors
+  # ) +
   # Add climate state color bars
   geom_rect(
     data = climate_states, 
-    aes(xmin = bottom, xmax = top, ymin = y_max_val, ymax = y_max_val * 1.1),
+    aes(xmin = bottom, xmax = top, ymin = y_max_val, ymax = y_max_val * 1.12),
     fill = I(climate_states$climate_color), 
     color = "black", linewidth = 0.3, inherit.aes = FALSE
   ) +
@@ -83,8 +83,9 @@ P_north_sensitivity <- ggplot(filter(slope_data, slope_type == "Northern"),
   ) +
   scale_y_continuous(
     limits = c(y_min_val, y_max_val*1.12),
+    breaks = seq(-3, 2, 1),
     expand = c(0, 0)
-  ) +
+  )  +
   labs(
     x = NULL,
     y = 'Slope value',
@@ -121,31 +122,33 @@ P_south_sensitivity <- ggplot(filter(slope_data, slope_type == "Southern"),
     color = "black", linewidth = 0.4, alpha = 0.8
   )  +
   # Add slope curves for different types
-  geom_line(linewidth = 1) +
+  geom_line(alpha = 0.6,linewidth = 1) +
   geom_point(
     aes(shape = abs(slope_value) < 0.1),
-    size = 2, stroke = 0.55
+    size = 2, alpha = 0.6,stroke = 0.55
   ) +
   scale_shape_manual(values = c(`TRUE` = 1, `FALSE` = 16)) +
-  scale_color_manual(
-    name = "Percentile",
-    values = quantile_colors
-  ) +
+  # scale_color_manual(
+  #   name = "Percentile",
+  #   values = quantile_colors
+  # ) +
   scale_fill_identity() +
   # Add a black border, enclosing only the data range
-  geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val), 
+  geom_rect(aes(xmin = x_min_val, xmax = x_max_val, ymin = y_min_val, ymax = y_max_val*1.12), 
             color = "black", fill = NA, linewidth = 1) +
   geom_hline(yintercept = 0, color="black", linewidth=0.8, linetype = "dashed") + 
   # Set x and y axis ranges
   scale_x_reverse(
+    name = "Time (Ma)",
     limits = c(x_max_val, 0),
     breaks = seq(500, 0, -50),
     expand = c(0, 0)
   ) +
   scale_y_continuous(
-    limits = c(y_min_val, y_max_val),
+    limits = c(y_min_val, y_max_val*1.12),
+    breaks = seq(-3, 2, 1),
     expand = c(0, 0)
-  ) +
+  )  +
   labs(
     x = "Time (Ma)",
     y = "Slope value",
@@ -243,8 +246,8 @@ slope_sensitivity_boxplot <- ggplot(slope_boxplot_data, aes(x = climate_state, y
   geom_boxplot(aes(fill = quantile), outlier.shape = NA, alpha = 0.7, position = position_dodge(width = 0.75)) +
   geom_jitter(aes(color = quantile), size = 1, alpha = 0.5,
               position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.75))+
-  scale_fill_manual(name = "Percentile", values = quantile_colors) +  # Assign fill colors
-  scale_color_manual(name = "Percentile", values = quantile_colors) +  # Assign point colors
+  # scale_fill_manual(name = "Percentile", values = quantile_colors) +  # Assign fill colors
+  # scale_color_manual(name = "Percentile", values = quantile_colors) +  # Assign point colors
   
   # Facet by hemisphere
   facet_wrap(~ hemisphere, ncol=1,labeller = labeller(
