@@ -1,25 +1,47 @@
-# LDG_climate_state
-# LDG Climate State Analysis
+### LDG_climate_state
+Latitudinal Diversity Gradient (LDG) analysis workflow for deep-time biodiversity and climate-state reconstruction.
+This repository provides a fully reproducible R pipeline for computing LDG curves, LDG slopes, and climate-state comparisons based on global fossil occurrence data.
 
-This repository contains scripts and data for analyzing latitudinal diversity gradients (LDG) in relation to climate states, with a focus on Paleozoic periods. The project employs a combination of subsampling techniques and comparative analysis to explore the relationships between climate, biodiversity, and geographical distribution.
 
-## Repository Structure
+### Main Functions
+LDG_climate_state/
+│
+├── 000_Main.R                     # Master pipeline controller
+│
+├── 00_data_preparation.R          # Data cleaning, paleolat, time-bin assignment
+├── 00_data_distribution_map.R     # Fossil distribution maps
+│
+├── 01_LDG_calculation.R           # Richness calculations (dggridR + iNEXT)
+│
+├── 02_LDG_slope.R                 # LDG slope estimation
+├── 02_LDG_slope_fig.R             # Slope figure (main)
+├── 02_LDG_slope_fig2.R            # Slope figure (variations)
+├── 02_LDG_slope_fig3.R            # Slope figure (sensitivity)
+├── 02_LDG_slope_sensitivity_test.R# Slope robustness tests
+│
+├── 03_LDG_compared_in_climate_state.R   # LDG × climate-state comparison
+├── 03_LDG_sensitivity_test.R            # Additional sensitivity tests
+│
+├── 04_LDG_completeness_estimate.R       # Cell completeness analysis
+├── 04_LDG_histogram.R                   # Richness distribution plots
+│
+├── calculate_Info.R               # Utility functions
+├── calculate_LDG_slope.R          # Core slope-calculation function
+├── check_hemisphere_good.R        # QC for hemisphere-level data sufficiency
+│
+├── options.R                      # Global settings and parameters
+├── test_code.R                    # Testing & debugging
+│
+├── data/                          # PBDB, climate state, time bins, SC16
+└── LICENSE
 
-### Functions
-- `buffer_subsampling.R`: Implements a buffer subsampling method for data analysis.
-- `calculate_Info.R`: Contains functions to calculate relevant metrics and information for LDG analysis.
-- `00_data_preparation.R`: Prepares raw data for analysis, including cleaning and formatting.
-- `01_LDG_calculation.R`: Calculates latitudinal diversity gradients using various methods.
-- `02_LDG_slope.R`: Analyzes the slopes of LDG curves to assess trends.
-- `03_LDG_compared_in_climate_state.R`: Compares LDG results across different climate states.
-- `test_code.R`: A script for testing and debugging functions.
-- `options.R`: Configuration and global options for the project.
 
 ### Data
-- `CGMW_ICS_colour_codes.xlsx`: International stratigraphic chart color codes used for visualizations.
-- `data.rds`: Raw data used in the analysis.
-- `data_clean.rds`: Cleaned and processed data ready for analysis.
-- `stages.csv`: Information about geological stages and time periods.
+- `climate_states.csv`: climate state information from Judd et al., 2021.
+- `time_bins.rds` : International stratigraphic chart color codes used for visualizations.
+- `./data/raw/pbdb_data.RDS`: Raw data from PBDB used in the analysis.
+- `./data/processed/data_clean.rds`: Cleaned and processed data ready for analysis.
+- `./SC16`: paleogeographic surfaces from Scotese (2016).
 
 ### Additional Files
 - `.gitignore`: Specifies files to be excluded from version control.
@@ -30,39 +52,40 @@ This repository contains scripts and data for analyzing latitudinal diversity gr
 ### Prerequisites
 - R (version 4.0 or above)
 - R packages:
-  - `tidyverse`
-  - `ggplot2`
-  - `dplyr`
-  - `readr`
-  - `data.table`
+  `tidyverse`
+  `data.table`
+  `ggplot2`
+  `dplyr`
+  `iNEXT`
+  `dggridR`
+  `sf`
+  `terra`
+  `deeptime`
 
 ### Installation
 Clone the repository to your local machine:
 ```bash
 git clone <repository_url>
+# 
+# Usage
+# 
+# Simply execute the master script:
+# source("000_Main.R")
+# 
+# This will automatically run all steps:
+# Data cleaning & paleolatitude assignment
+# Equal-area richness estimation
+# LDG curve generation
+# LDG slope analysis
+# Climate-state comparison
+# Completeness and sensitivity tests
 
+### Pending items:
 
-## Current State and Pending Issues
+standardize the default iNEXT quorum (q)
 
-### 1. Paleolatitude Reconstruction Annotation
-In the script `00_data_preparation.R`, the section labeled **# 0.3 To-Do: Paleolatitude Reconstruction Annotation** is currently undefined. The parameters and methods for this part of the analysis need to be determined.
+confirm whether incidence or abundance should be used for PBDB occurrences
 
-### 2. Richness Results Calculation
-The following code snippet in `00_data_preparation.R` calculates richness results using a set of parameters, but some aspects require further discussion:
+finalize the equal-area grid spacing (500 km vs 250 km etc sensitivity)
 
-```R
-richness_results <- lapply(dat_list, function(dat) {
-  compute_richness_summary(
-    dat = dat,
-    xy = xy,
-    iter = iter,
-    nSite = nSite,
-    r = r,
-    crs = crs,
-    q = q, 
-    datatype = datatype, 
-    base = base,
-    level = level, 
-    nboot = nboot
-  )
-})
+finalize bootstrap settings (nboot)
