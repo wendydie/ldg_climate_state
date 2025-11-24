@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17631060.svg)](https://doi.org/10.5281/zenodo.17631060)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17631059.svg)](https://doi.org/10.5281/zenodo.17631059)
 
 ### LDG_climate_state
 Latitudinal Diversity Gradient (LDG) analysis workflow for deep-time biodiversity and climate-state reconstruction.
@@ -84,5 +84,6 @@ finalize the equal-area grid spacing (500 km vs 250 km etc sensitivity)
 
 
 finalize bootstrap settings (nboot)
+
 
 
