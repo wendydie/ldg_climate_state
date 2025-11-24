@@ -11,39 +11,44 @@ library(tidyr)
 # -----------------------------------------------------------------------
 # Convert q50, q60, q75, q90, q95 into long format for faceted plotting
 df_long <- rich_df %>%
-  select(bin_midpoint, abs_lat_bin_mid, q50, q60, q75, q90, q95, color) %>%
+  select(bin_midpoint, abs_lat_bin_mid, q50, q60, q75, q90, q95, hemisphere_mod) %>%
   pivot_longer(cols = c(q50, q60, q75, q90, q95), 
                names_to = "quantile", values_to = "richness_value")
 # Ensure consistent color mapping
 rich_df <- rich_df %>%
-  mutate(color = factor(color, levels = c("Northern", "Southern", "Bad hemisphere")))
+  mutate(hemisphere_mod = factor(hemisphere_mod, levels = c("Northern", "Southern", "Poor quality")))
 # Get unique colors present in the dataset
-color_levels <- c("Northern", "Southern", "Bad hemisphere")
-color_palette <- c("Northern" = "#0072B2", "Southern" = "#E69F00", "Bad hemisphere" = "#D3D3D3")
+color_levels <- c("Northern", "Southern", "Poor quality")
+color_palette <- c("Northern" = "#0072B2", "Southern" = "#E69F00", "Poor quality" = "#D3D3D3")
 color_palette <- color_palette[color_levels]  # Keep only the necessary colors
 # Define linetypes for different percentiles
-quantile_palette <- c("q50" = "solid", "q60" = "dashed", "q75" = "dotdash", "q90" = "twodash", "q95" = "longdash")
+quantile_palette <- c("q50" = "solid", "q60" = "dashed", "q75" = "dotdash", "q90" = "twodash", "q95" = "dotted")
 # Create the faceted plot
-combined_rich_fig <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized, color = color)) +
+combined_rich_fig <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized, color = hemisphere_mod)) +
   geom_point(alpha = 0.7, size = 1) +
   # Add raw richness percentile points
   geom_point(data = df_long, 
-             aes(x = abs_lat_bin_mid, y = richness_value, color = color, shape = quantile),
+             aes(x = abs_lat_bin_mid, y = richness_value, color = hemisphere_mod, shape = quantile),
              size = 1, inherit.aes = FALSE) +
   # Add Theil-Sen fitted lines for each percentile
   geom_line(data = ols_lines, 
             aes(x = abs_lat_bin_mid, y = fitted_values, 
-                linetype = quantile, color = color), 
+                linetype = quantile, color = hemisphere_mod), 
             linewidth = 1, inherit.aes = FALSE) +
   # Use viridis color palette (same for points and lines)
-  scale_color_manual(name = "LDG slope",
-                     values = c("Bad hemipshere" = "#D3D3D3",
+  scale_color_manual(name = "Line",
+                     values = c("Poor quality" = "#D3D3D3",
                                 "Northern" = "#0072B2",
                                 "Southern" = "#E69F00")) +
   scale_linetype_manual(name = "Percentile Fit", values = quantile_palette) +
-  scale_shape_manual(name = "Percentiles", values = c("q50" = 16, "q60" = 17, "q75" = 15, "q90" = 18, "q95" = 19)) +
+  scale_shape_manual(name = "Percentile", values = c("q50" = 16, "q60" = 17, "q75" = 15, "q90" = 18, "q95" = 19)) +
   guides(
-    color = guide_legend(title = "LDG slope"),
+    color = guide_legend(title = "Line",
+                         override.aes = list(
+      shape = NA,
+      size  = 2,
+      linetype = c("solid", "solid", "solid")
+    )),
     linetype = guide_legend(title = "Percentile"),
     shape = "none"
   ) +
@@ -78,6 +83,7 @@ combined_rich_fig <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized, color =
     axis.title.y = element_text(size = 12, color = "black", angle = 90),  # Show y-axis title
     legend.position = "bottom"  # Remove redundant legend
   )
+print(combined_rich_fig)
 # Save the faceted figure
 com_path  <- sprintf("./figures/LDG_slope_facet_%s_km_%s_quota_%s_equal_area_latitude_bins_combined_figure.jpg", 
                        params$spacing, params$level,rich_params$n_lat_bins)
@@ -87,44 +93,43 @@ ggsave(com_path, combined_rich_fig ,  width = 8, height = 9, dpi = 300)
 for (stg in unique(rich_df$stage)) {
 
   df_bin <- rich_df %>%
-    filter(stage == stg, !is.na(color)) %>%
-    mutate(color = factor(color, levels = c("Northern", "Southern", "Bad hemisphere")))
+    filter(stage == stg, !is.na(hemisphere_mod)) %>%
+    mutate(hemisphere_mod = factor(hemisphere_mod, levels = c("Northern", "Southern", "Poor quality")))
   bin <- unique(df_bin$bin_midpoint)
   olsl_data_bin <- ols_lines %>%
-    filter(stage == stg, !is.na(color)) %>%
-    mutate(color = factor(color, levels = c("Northern", "Southern", "Bad hemisphere")))
+    filter(stage == stg, !is.na(hemisphere_mod)) %>%
+    mutate(hemisphere_mod = factor(hemisphere_mod, levels = c("Northern", "Southern", "Poor quality")))
   # Convert q50, q60, q75, q90, q95 into long format
   df_long <- df_bin %>%
-    select(abs_lat_bin_mid, q50, q60, q75, q90, q95, color) %>%
+    select(abs_lat_bin_mid, q50, q60, q75, q90, q95, hemisphere_mod) %>%
     pivot_longer(cols = c(q50, q60, q75, q90, q95),
                  names_to = "quantile", values_to = "richness_value")
-  # Get unique colors present in the current bin
-  color_levels <- unique(c(df_bin$color, olsl_data_bin$color))
-  # Ensure we only keep colors that exist in the data
-  color_palette <- c("Northern" = "#0072B2", "Southern" = "#E69F00", "Bad hemisphere" = "#D3D3D3")
-  color_palette <- color_palette[color_levels]  # Only use colors that exist in the data
+  color_levels <- unique(df_bin$hemisphere_mod)
+  color_palette <- c("Northern" = "#0072B2", "Southern" = "#E69F00", "Poor quality" = "#D3D3D3")
+  color_palette <- color_palette[color_levels]  # Keep only the necessary colors
   # Define linetypes for different percentiles
-  quantile_palette <- c("q50" = "solid", "q60" = "dashed", "q75" = "dotdash", "q90" = "twodash", "q95" = "longdash")
+  quantile_palette <- c("q50" = "solid", "q60" = "dashed", "q75" = "dotdash", "q90" = "twodash", "q95" = "dotted")
 
-  p <- ggplot(df_bin, aes(x = abs_lat, y = qD_normalized, color = color)) +
+  p <- ggplot(df_bin, aes(x = abs_lat, y = qD_normalized, color = hemisphere_mod)) +
     geom_point(alpha = 0.7, size = 2) +
     # Add raw richness percentile points
     geom_point(data = df_long,
-               aes(x = abs_lat_bin_mid, y = richness_value, color = color, shape = quantile),
+               aes(x = abs_lat_bin_mid, y = richness_value, color = hemisphere_mod, shape = quantile),
                size = 2, inherit.aes = FALSE) +
     # Add Theil-Sen fitted lines for each percentile
     geom_line(data = olsl_data_bin,
               aes(x = abs_lat_bin_mid, y = fitted_values,
-                  linetype = quantile, color = color),
+                  linetype = quantile, color = hemisphere_mod),
               linewidth = 1, inherit.aes = FALSE) +
     # Add OLS fit for qD_normalized
-    geom_smooth(data = df_bin, aes(x = abs_lat, y = qD_normalized, color = color),
+    geom_smooth(data = df_bin, aes(x = abs_lat, y = qD_normalized, color = hemisphere_mod),
                 method = "lm", se = FALSE, linetype = "dotted", linewidth = 1.2) +
-    scale_color_manual(name = "Hemisphere type", values = color_palette) +
+    scale_color_manual(name = "Line", values = color_palette) +
     scale_linetype_manual(name = "Percentile fit", values = quantile_palette) +
     scale_shape_manual(name = "Percentiles", values = c("q50" = 16, "q60" = 17, "q75" = 15, "q90" = 18, "q95" = 19)) +
     guides(
-      color = guide_legend(override.aes = list(color = unname(color_palette))),
+      color = guide_legend(title = "Line", override.aes = list(shape = NA, linetype = "solid")), 
+      # guide_legend(override.aes = list(color = unname(color_palette))),
       linetype = guide_legend(title = "Percentiles"),
       shape = "none",
     ) +

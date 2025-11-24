@@ -10,7 +10,10 @@
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(cowplot)
+library(patchwork)
 source("./R/options.R")
+source("./R/functions/check_hemisphere_good.R")
 # Read the dataset----------------------------------------------------------
 rich_df <- read.csv(sprintf("./results/LDG/%s_cell_%s_richness.csv", 
                             params$spacing, params$level))
@@ -122,9 +125,33 @@ stacked_bar_plot <- ggplot(rich_df2, aes(x = cell_lat, fill = completeness)) +
     legend.spacing.y = unit(-3, "pt"),  # Reduce spacing between legend items
     legend.key.height = unit(5, "pt")  # Make legend more compact
   )
+p_main <- stacked_bar_plot + theme(legend.position = "none")
+g_legend <- cowplot::get_legend(
+  stacked_bar_plot + 
+    theme(
+      legend.position = "bottom",
+      legend.title = element_text(size=10),
+      legend.text = element_text(size=8),
+      legend.key = element_rect(fill = NA, color = NA),
+      legend.background = element_rect(fill = NA, color = NA), 
+      legend.box.background = element_rect(fill = NA, color=NA)
+    )
+)
+p_final <- p_main +
+  inset_element(
+    g_legend,
+    left   = 0.63,
+    bottom = 0.04,
+    right  = 0.88,
+    top    = 0.08,
+    on_top = TRUE,
+    clip = FALSE,
+    align_to = "plot"
+  )
+print(p_final)
 
 # Save and display plot
-print(stacked_bar_plot)
+# print(stacked_bar_plot)
 ggsave(sprintf("./figures/%s_km_%s_quota_completeness_histogram.jpg", 
-               params$spacing, params$level), stacked_bar_plot, 
+               params$spacing, params$level), p_final, 
        width = 8, height = 8, dpi = 300)

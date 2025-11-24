@@ -1,3 +1,6 @@
+[![DOI](https://zenodo.org/badge/895013248.svg)](https://doi.org/10.5281/zenodo.17631059)
+
+
 ### LDG_climate_state
 Latitudinal Diversity Gradient (LDG) analysis workflow for deep-time biodiversity and climate-state reconstruction.
 This repository provides a fully reproducible R pipeline for computing LDG curves, LDG slopes, and climate-state comparisons based on global fossil occurrence data.
@@ -5,35 +8,26 @@ This repository provides a fully reproducible R pipeline for computing LDG curve
 
 ### Main Functions
 LDG_climate_state/
-│
-├── 000_Main.R                     # Master pipeline controller
-│
-├── 00_data_preparation.R          # Data cleaning, paleolat, time-bin assignment
-├── 00_data_distribution_map.R     # Fossil distribution maps
-│
-├── 01_LDG_calculation.R           # Richness calculations (dggridR + iNEXT)
-│
-├── 02_LDG_slope.R                 # LDG slope estimation
-├── 02_LDG_slope_fig.R             # Slope figure (main)
-├── 02_LDG_slope_fig2.R            # Slope figure (variations)
-├── 02_LDG_slope_fig3.R            # Slope figure (sensitivity)
-├── 02_LDG_slope_sensitivity_test.R# Slope robustness tests
-│
-├── 03_LDG_compared_in_climate_state.R   # LDG × climate-state comparison
-├── 03_LDG_sensitivity_test.R            # Additional sensitivity tests
-│
-├── 04_LDG_completeness_estimate.R       # Cell completeness analysis
-├── 04_LDG_histogram.R                   # Richness distribution plots
-│
-├── calculate_Info.R               # Utility functions
-├── calculate_LDG_slope.R          # Core slope-calculation function
-├── check_hemisphere_good.R        # QC for hemisphere-level data sufficiency
-│
-├── options.R                      # Global settings and parameters
-├── test_code.R                    # Testing & debugging
-│
-├── data/                          # PBDB, climate state, time bins, SC16
-└── LICENSE
+- `000_Main.R`                     # Master pipeline controller
+- `00_data_preparation.R`          # Data cleaning, paleolat, time-bin assignment
+- `00_data_distribution_map.R`     # Fossil distribution maps
+- `01_LDG_calculation.R`           # Richness calculations (dggridR + iNEXT)
+- `02_LDG_slope.R`                 # LDG slope estimation
+- `02_LDG_slope_fig.R`             # Slope figure (main)
+- `02_LDG_slope_fig2.R`            # Slope figure (variations)
+- `02_LDG_slope_fig3.R`            # Slope figure (sensitivity)
+- `02_LDG_slope_sensitivity_test.R`# Slope robustness tests
+- `03_LDG_compared_in_climate_state.R`   # LDG × climate-state comparison
+- `03_LDG_sensitivity_test.R`            # Additional sensitivity tests
+- `04_LDG_completeness_estimate.R`       # Cell completeness analysis
+- `04_LDG_histogram.R`                   # Richness distribution plots
+  - `calculate_Info.R`               # Utility functions
+  - `calculate_LDG_slope.R `         # Core slope-calculation function
+  - `check_hemisphere_good.R`        # QC for hemisphere-level data sufficiency
+- `options.R`                      # Global settings and parameters
+- `test_code.R`                    # Testing & debugging
+- `data/`                          # PBDB, climate state, time bins, SC16
+- `LICENSE`
 
 
 ### Data
@@ -70,15 +64,16 @@ git clone <repository_url>
 # Usage
 # 
 # Simply execute the master script:
-# source("000_Main.R")
+`source("000_Main.R")`
 # 
-# This will automatically run all steps:
-# Data cleaning & paleolatitude assignment
-# Equal-area richness estimation
-# LDG curve generation
-# LDG slope analysis
-# Climate-state comparison
-# Completeness and sensitivity tests
+This will automatically run all steps:
+Data cleaning & paleolatitude assignment
+Equal-area richness estimation
+LDG curve generation
+LDG slope analysis
+Climate-state comparison
+Completeness and sensitivity tests
+```
 
 ### Pending items:
 

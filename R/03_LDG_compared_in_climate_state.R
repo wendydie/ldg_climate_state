@@ -298,8 +298,9 @@ P_south_backcolor <- ggplot(filter(slope_data, slope_type == "Southern"),
     xlim = c(x_max_val, 0),
     pos = "bottom",
     dat = list("periods", "epochs"),
-    height = unit(1.5, "lines")
-  ) + 
+    height = unit(1.5, "lines"),
+    expand = FALSE
+  )+ 
   theme_minimal() +
   theme(
     panel.grid.major = element_blank(),
@@ -311,7 +312,7 @@ P_south_backcolor <- ggplot(filter(slope_data, slope_type == "Southern"),
     axis.ticks.x = element_line(color = "black", linewidth = 0.5),
     axis.ticks.y = element_line(color = "black", linewidth = 0.5),
     panel.spacing = unit(0.3, "lines"),  # Reduce spacing between facets
-    legend.position = "none"  # Remove redundant legend
+    legend.position = "none"
   )
 
 climate_bar <- ggplot(climate_legend, aes(x = 0, y = 0, fill = climate_state)) +
@@ -347,7 +348,7 @@ slope_vTime_plot_backcolor <- ((P_north_backcolor / P_south_backcolor) / climate
 print(slope_vTime_plot_backcolor)
 sT_path_jpg <- sprintf("./figures/jpg/background color %skm %squota %s equal-area latitude bins time series.jpg", 
                   params$spacing, params$level, rich_params$n_lat_bins)
-ggsave(sT_path_jpg, slope_vTime_plot_backcolor, width = 8, height = 7, dpi = 300)
+ggsave(sT_path_jpg, slope_vTime_plot_backcolor, width = 8, height = 7, dpi = 900, type = "cairo")
 
 sT_path_pdf <- sprintf("./figures/pdf/background color %skm %squota %s equal-area latitude bins time series.pdf", 
                    params$spacing, params$level, rich_params$n_lat_bins)
