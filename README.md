@@ -1,6 +1,5 @@
 [![DOI](https://zenodo.org/badge/895013248.svg)](https://doi.org/10.5281/zenodo.17631059)
 
-
 ### LDG_climate_state
 Latitudinal Diversity Gradient (LDG) analysis workflow for deep-time biodiversity and climate-state reconstruction.
 This repository provides a fully reproducible R pipeline for computing LDG curves, LDG slopes, and climate-state comparisons based on global fossil occurrence data.
@@ -83,4 +82,6 @@ confirm whether incidence or abundance should be used for PBDB occurrences
 
 finalize the equal-area grid spacing (500 km vs 250 km etc sensitivity)
 
+
 finalize bootstrap settings (nboot)
+
