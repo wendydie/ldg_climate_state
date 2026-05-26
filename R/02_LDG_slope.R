@@ -2,9 +2,6 @@
 # Project: LDG_climate_state
 # File name: 02_LDG_slope.R
 # Last updated: 2025-01-21
-# Author: Die (Wendy) Wen
-# Email: geowendywen@outlook.com
-# Repository: https://github.com/wendydie/LDG_climate_state
 # -----------------------------------------------------------------------
 # Load libraries and options --------------------------------------------
 library(dplyr)
@@ -20,10 +17,24 @@ rich_df <- read.csv(sprintf("./results/LDG/%s_cell_%s_richness.csv",
 time_bins <- readRDS("./data/time_bins.RDS")
 lat_bins <- palaeoverse::lat_bins_area(n = rich_params$n_lat_bins) %>% 
   arrange(min)
+lat_zone_lookup <- lat_bins %>%
+  mutate(
+    lat_bin_mid = mid,
+    abs_lat_bin_mid = abs(mid),
+    lat_zone = case_when(
+      abs_lat_bin_mid >= 0  & abs_lat_bin_mid < 30 ~ "Low",
+      abs_lat_bin_mid >= 30 & abs_lat_bin_mid < 60 ~ "Middle",
+      abs_lat_bin_mid >= 60 & abs_lat_bin_mid <= 90 ~ "High",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  select(lat_bin_mid, bin, abs_lat_bin_mid, lat_zone)
+# Baseline QC settings ---------------------------------------------------
+occurrence_min <- 5
 # Step 1 : Data filtering -----------------------------------------------
 # Filter the incomplete cells.
 rich_df <- rich_df %>%
-  filter (nT>=5 & t <= 2*nT)
+  filter(nT >= occurrence_min & t <= 2 * nT)
 # Our time period starts from 486.8500 because the climate state data begins at 486.85.
 rich_df$stage <- time_bins$interval_name[match(rich_df$bin_midpoint, time_bins$mid_ma)]
 rich_df <- rich_df %>% 
@@ -38,8 +49,8 @@ rich_df <- rich_df %>%
          lat_band_mid = (floor(abs_lat / 30) *
                            30) + (30 / 2) # Divide the cells into tropical(0,30)-temperate(30,60)-pole(60,90) latitude bands for discarding reliable hemispheres.
          ) %>%
-  left_join(lat_bins %>% select(bin, lat_bin_mid = mid), by = "bin") %>%
-  mutate(abs_lat_bin_mid = abs(lat_bin_mid))  # Midpoints of 12 equal-area latitude bands
+  left_join(lat_zone_lookup, by = "bin") %>%
+  filter(!is.na(abs_lat_bin_mid), !is.na(lat_zone))
 
 # The richness values are normalized to 100 in each stage by dividing the richness in each cell by the maximum richness within that stage.
 rich_df <- rich_df %>%
@@ -123,6 +134,83 @@ LDG_slope$color <- rich_df$color[match(
   paste(LDG_slope$bin_midpoint, LDG_slope$hemisphere),
   paste(rich_df$bin_midpoint, rich_df$hemisphere)
 )]
+latbin_counts <- rich_df %>%
+  group_by(bin_midpoint, hemisphere, abs_lat_bin_mid) %>%
+  summarise(n_cells_latbin = n(), .groups = "drop")
+
+sampling_summary <- rich_df %>%
+  group_by(bin_midpoint, hemisphere) %>%
+  summarise(
+    n_cells = n(),
+    sum_nT = sum(nT, na.rm = TRUE),
+    mean_nT = mean(nT, na.rm = TRUE),
+    median_nT = median(nT, na.rm = TRUE),
+    n_valid_lat_bins = n_distinct(abs_lat_bin_mid),
+    min_abs_lat = min(abs_lat, na.rm = TRUE),
+    max_abs_lat = max(abs_lat, na.rm = TRUE),
+    lat_range = max_abs_lat - min_abs_lat,
+    mean_t_over_nT = mean(t / nT, na.rm = TRUE),
+    max_t_over_nT = max(t / nT, na.rm = TRUE),
+    prop_high_extrapolation = mean(t / nT > 1.5, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  left_join(
+    latbin_counts %>%
+      group_by(bin_midpoint, hemisphere) %>%
+      summarise(
+        k_min = min(n_cells_latbin, na.rm = TRUE),
+        k_max = max(n_cells_latbin, na.rm = TRUE),
+        k_mean = mean(n_cells_latbin, na.rm = TRUE),
+        k_median = median(n_cells_latbin, na.rm = TRUE),
+        k_cv = sd(n_cells_latbin, na.rm = TRUE) / mean(n_cells_latbin, na.rm = TRUE),
+        k_evenness = k_min / k_mean,
+        dominant_lat_bin_prop = k_max / sum(n_cells_latbin),
+        .groups = "drop"
+      ),
+    by = c("bin_midpoint", "hemisphere")
+  )
+# NH-SH sampling-profile dissimilarity
+# This is stage-level, not hemisphere-level.
+# It compares the proportional distribution of cells across the 6 absolute-latitude bins.
+abs_bins <- sort(unique(rich_df$abs_lat_bin_mid))
+
+sampling_profile_df <- rich_df %>%
+  count(bin_midpoint, hemisphere, abs_lat_bin_mid, name = "n_cells_latbin") %>%
+  complete(
+    bin_midpoint,
+    hemisphere = c("Northern", "Southern"),
+    abs_lat_bin_mid = abs_bins,
+    fill = list(n_cells_latbin = 0)
+  ) %>%
+  group_by(bin_midpoint, hemisphere) %>%
+  mutate(
+    p_cells = ifelse(
+      sum(n_cells_latbin, na.rm = TRUE) > 0,
+      n_cells_latbin / sum(n_cells_latbin, na.rm = TRUE),
+      NA_real_
+    )
+  ) %>%
+  ungroup() %>%
+  select(bin_midpoint, hemisphere, abs_lat_bin_mid, p_cells) %>%
+  pivot_wider(
+    names_from = hemisphere,
+    values_from = p_cells,
+    names_prefix = "p_"
+  ) %>%
+  group_by(bin_midpoint) %>%
+  summarise(
+    sampling_profile_dissim = 0.5 * sum(abs(p_Northern - p_Southern), na.rm = TRUE),
+    .groups = "drop"
+  )
+LDG_slope <- LDG_slope %>%
+  left_join(
+    sampling_summary,
+    by = c("bin_midpoint", "hemisphere")
+  ) %>%
+  left_join(
+    sampling_profile_df,
+    by = "bin_midpoint"
+  )
 # View the updated LDG_slope with slope, intercept, and classification
 View(LDG_slope)
 # Save results to CSV

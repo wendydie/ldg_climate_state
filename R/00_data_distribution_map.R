@@ -3,8 +3,6 @@
 # File name: 00_data_distribution_map.R
 # Last updated: 2025-10-15
 # Author: Die (Wendy) Wen
-# Email: geowendywen@outlook.com
-# Repository: https://github.com/wendydie/LDG_climate_state
 # -----------------------------------------------------------------------
 # Load necessary libraries
 library(ggplot2)

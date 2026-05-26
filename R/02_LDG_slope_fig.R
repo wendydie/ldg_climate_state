@@ -2,16 +2,14 @@
 # Project: LDG_climate_state
 # File name: 02_LDG_slope_fig.R
 # Last updated: 2025-10-15
-# Author: Die (Wendy) Wen
-# Email: geowendywen@outlook.com
-# Repository: https://github.com/wendydie/LDG_climate_state
 # -----------------------------------------------------------------------
 # Load libraries and options --------------------------------------------
 library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(viridis)
-
+library(cowplot)
+library(patchwork)
 source("./R/options.R")
 # -----------------------------------------------------------------------
 rich_df <- rich_df %>%
@@ -24,11 +22,16 @@ rich_df <- rich_df %>%
     q95 = quantile(qD_normalized, 0.95, na.rm = TRUE)
   ) %>%
   ungroup()
-
+rich_df <- rich_df %>%
+  mutate(
+    hemisphere_mod = ifelse(label == "bad", 
+                            "Poor quality",
+                            hemisphere)
+  )
 # Generate OLS fitted values for visualization, grouped by percentile
 ols_lines <- rich_df %>%
-  select(bin_midpoint, stage, abs_lat_bin_mid, hemisphere,label,
-         color, qD_normalized, q50, q60, q75, q90, q95) %>%  # Include percentiles
+  select(bin_midpoint, stage, abs_lat_bin_mid, hemisphere,label,hemisphere_mod,
+         qD_normalized, q50, q60, q75, q90, q95) %>%  # Include percentiles
   pivot_longer(cols = c(q50, q60, q75, q90, q95), 
                names_to = "quantile", values_to = "qD_value") %>%  # Reshape to long format
   left_join(LDG_slope[,c("bin_midpoint", "hemisphere", "quantile", "slope", "intercept")], 
@@ -38,35 +41,56 @@ ols_lines <- rich_df %>%
 
 # Step 4: Create the scatter plot with LDG slopes------------------------
 LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
-                                  color = ifelse(label == "bad", "Bad hemipshere", hemisphere),
+                                  color = hemisphere_mod,
                                   shape = hemisphere
 )) +
   # Scatter plot points (Northern & Southern hemispheres get automatic colors)
   geom_point(alpha = 0.7, size = 1) +
   geom_point(data = filter(rich_df, label == "good"),
              aes(x = abs_lat_bin_mid, y = q75,shape = 'q75',
-                 color = ifelse(label == "bad", "Bad hemipshere", hemisphere)),
+                 color = color),
              size = 2) +
   # Theil-Sen fitted line for Northern Hemisphere
   geom_line(data = filter(ols_lines, quantile=='q75'),
             aes(x = abs_lat_bin_mid, y = fitted_values, 
-                linetype = hemisphere, color = color),
+                linetype = hemisphere_mod, color = hemisphere_mod),
             linewidth = 1, inherit.aes = FALSE) +
   # Use viridis color palette (same for points and lines)
   scale_color_manual(name = "LDG slope",
-                     values = c("Bad hemipshere" = "#D3D3D3",
+                     values = c("Poor quality" = "#D3D3D3",
                                 "Northern" = "#0072B2",
                                 "Southern" = "#E69F00")) +
-  scale_shape_manual(name = "Point type",
+  scale_shape_manual(name = "Marker",
                      values = c("q75" = 4, "Northern" = 16, "Southern" = 17)) +
-  scale_linetype_manual(name = "Legend", values = c("Northern" = "solid",
+  scale_linetype_manual(name = "Line type", values = c("Poor quality" = "solid",
+                                                       "Northern" = "solid",
                                                     "Southern" = "solid")) +
+  # guides(
+  #   shape = guide_legend(override.aes = list(size = c(2, 3, 3))),
+  #   color = guide_legend(override.aes = list(color = c("#D3D3D3", "#0072B2", "#E69F00"), 
+  #                                            shape = c(15, 16, 17))),
+  #   linetype = "none"
+  # ) +
   guides(
-    shape = guide_legend(override.aes = list(size = c(2, 3, 3))),
-    color = guide_legend(override.aes = list(color = c("#D3D3D3", "#0072B2", "#E69F00"), 
-                                             shape = c(15, 16, 17))),
+    shape = guide_legend(
+      title = "Marker",direction = "horizontal",
+      nrow = 1,
+      override.aes = list(
+        color = 'black',
+        size  = c(2.5, 2, 2)
+      )
+    ),
+    color = guide_legend(
+      title = "Line",direction = "horizontal",
+      nrow = 1,
+      override.aes = list(
+        shape = NA,
+        size  = 2,
+        linetype = c("solid", "solid", "solid")
+      )
+    ),
     linetype = "none"
-  ) +
+  )+
   # Facet by bin_midpoint with 8 columns
   scale_y_continuous(
     breaks = function(y) {
@@ -96,12 +120,38 @@ LDG_s_plot <- ggplot(rich_df, aes(x = abs_lat, y = qD_normalized,
     axis.title.x = element_text(size = 12, color = "black"),  # Show x-axis title
     axis.text.y = element_text(size = 8, color = "black"),  # Show y-axis labels on the left
     axis.title.y = element_text(size = 12, color = "black", angle = 90),  # Show y-axis title
-    legend.position = "bottom"  # Remove redundant legend
+    legend.position = "bottom",
+    legend.box = "vertical",
+    legend.spacing.y = unit(-0.05,"pt")
   )
-print(LDG_s_plot)
+p_main <- LDG_s_plot + theme(legend.position = "none")
+legend_obj <- cowplot::get_legend(
+  LDG_s_plot +
+    theme(
+      legend.position = "bottom",
+      legend.box.margin = margin(0,0,0,0),
+      legend.margin = margin(0,0,0,0),
+      legend.title = element_text(size=10),
+      legend.text = element_text(size=8),
+      legend.key = element_rect(fill = NA, color = NA),
+      legend.background = element_rect(fill = NA, color = NA), 
+      legend.box.background = element_rect(fill = NA, color=NA)
+    )
+)
+LDG_s_plot_final <- p_main +
+  inset_element(
+    legend_obj,
+    left   = 0.63,
+    bottom = -0.03,
+    right  = 0.88,
+    top    = 0.05,
+    clip = FALSE,
+    on_top = TRUE
+  )
+print(LDG_s_plot_final)
 gg_path <- sprintf("./figures/%s km %squota %s equal-area latitude bins LDG slopes figure.jpg",
                    params$spacing, params$level, rich_params$n_lat_bins)
-ggsave(gg_path, LDG_s_plot, width = 8, height = 9, dpi = 300)
+ggsave(gg_path, LDG_s_plot_final, width = 8, height = 9, dpi = 300)
 
 for (stg in unique(rich_df$stage)) {
   df_bin <- subset(rich_df, stage == stg)
@@ -109,21 +159,21 @@ for (stg in unique(rich_df$stage)) {
   for (perc in rich_params$percentiles) {
     olsl_data <- ols_lines %>% filter(stage == stg, quantile == perc)
     # Get unique color levels
-    color_levels <- unique(df_bin$color)
+    color_levels <- unique(df_bin$hemisphere_mod)
     # Define a fixed color palette, but only use the colors needed
-    color_palette <- c("Northern" = "#0072B2", "Southern" = "#E69F00", "Bad hemisphere" = "#D3D3D3")
+    color_palette <- c("Northern" = "#0072B2", "Southern" = "#E69F00", "Poor quality" = "#D3D3D3")
     color_palette <- color_palette[color_levels]  # Keep only the required colors
 
     p <- ggplot(df_bin, aes(x = abs_lat, y = qD_normalized,
-                            color = color)) +  # Use new color column
+                            color = hemisphere_mod)) +  # Use new color column
       geom_point(alpha = 0.7, size = 2) +
       geom_point(data = filter(df_bin, label == "good"),
                  aes(x = abs_lat_bin_mid, y = get(perc),
-                     color = color), shape = 4, size = 2) +
+                     color = hemisphere_mod), shape = 4, size = 2) +
       # Theil-Sen fitted lines (Merged for Northern & Southern Hemispheres)
       geom_line(data = olsl_data,
                 aes(x = abs_lat_bin_mid, y = fitted_values, 
-                    linetype = hemisphere, color = color),
+                    linetype = hemisphere, color = hemisphere_mod),
                 linewidth = 1, inherit.aes = FALSE) +
       scale_color_manual(name = "LDG slope", values = color_palette) +  # Dynamically adjust colors
       scale_linetype_manual(name = "Legend", values = c("Northern" = "solid",
@@ -175,8 +225,8 @@ richness_percentiles <- rich_df %>%
     q90 = ~quantile(., 0.90, na.rm = TRUE),
     q95 = ~quantile(., 0.95, na.rm = TRUE)
   ), .names = "{.fn}"), .groups = "drop") %>%
-  pivot_longer(cols = starts_with("q"), names_to = "percentile", values_to = "richness") %>%
-  mutate(percentile = factor(percentile, levels = c("q50", "q60", "q75", "q90", "q95")))
+  pivot_longer(cols = starts_with("q"), names_to = "Percentile", values_to = "richness") %>%
+  mutate(Percentile = factor(Percentile, levels = c("q50", "q60", "q75", "q90", "q95")))
 
 # Use viridis color scheme (colorblind-friendly)
 # percentile_colors <- setNames(viridis(5, option = "D"), c("q50", "q60", "q75", "q90", "q95"))
@@ -187,10 +237,10 @@ richness_percentiles <- rich_df %>%
 LDG_fig <- ggplot() +
   geom_point(data = rich_df, aes(x = cell_lat, y = qD_normalized), size= 0.6, color = "black", alpha = 0.3) +  # Raw richness data
   geom_line(data = richness_percentiles, 
-            aes(x = lat_bin_mid, y = richness, color = percentile, group = percentile),
+            aes(x = lat_bin_mid, y = richness, color = Percentile, group = Percentile),
             alpha = 0.6, linewidth = 0.8) +
   # scale_color_manual(name = "Percentile", values = percentile_colors) +
-  labs(x = "Paleolatitude",
+  labs(x = "Palaeolatitude",
        y = "Normalized generic richness") +
   # Facet by bin_midpoint with stage names
   facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
@@ -220,11 +270,36 @@ LDG_fig <- ggplot() +
     axis.title.y = element_text(size = 12, color = "black", angle = 90),  # Show y-axis title
     legend.position = "bottom"
   )
-print(LDG_fig)
+p_fig_main <- LDG_fig + theme(legend.position = "none")
+fig_legend_obj <- cowplot::get_legend(
+  LDG_fig +
+    theme(
+      legend.position = "bottom",
+      legend.box.margin = margin(0,0,0,0),
+      legend.margin = margin(0,0,0,0),
+      legend.title = element_text(size=10),
+      legend.text = element_text(size=8),
+      legend.spacing.x = unit(-0.05,"pt"),
+      legend.key = element_rect(fill = NA, color = NA),
+      legend.background = element_rect(fill = NA, color = NA), 
+      legend.box.background = element_rect(fill = NA, color=NA)
+    )
+)
+LDG_fig_final <- p_fig_main +
+  inset_element(
+    fig_legend_obj,
+    left   = 0.63,
+    bottom = 0.01,
+    right  = 0.88,
+    top    = 0.03,
+    clip = FALSE,
+    on_top = TRUE
+  )
+print(LDG_fig_final)
 # Save the faceted figure
 LDG_f_path <- sprintf("./figures/LDG_per_stage_facet_%s_km_%s_quota %s_euqal_area_latitude_bins.jpg",
                        params$spacing, params$level,rich_params$n_lat_bins)
-ggsave(LDG_f_path, LDG_fig, width = 8, height = 9, dpi = 300)
+ggsave(LDG_f_path, LDG_fig_final, width = 8, height = 9, dpi = 300)
 
 
 for (stg in unique(rich_df$stage)) {
@@ -241,20 +316,20 @@ for (stg in unique(rich_df$stage)) {
       q90 = ~quantile(., 0.90, na.rm = TRUE),
       q95 = ~quantile(., 0.95, na.rm = TRUE)),
                      .names = "{.fn}")) %>%
-    pivot_longer(cols = starts_with("q"), names_to = "percentile", values_to = "richness") %>%
+    pivot_longer(cols = starts_with("q"), names_to = "Percentile", values_to = "richness") %>%
     ungroup() %>%
-    mutate(percentile = factor(percentile, levels = c("q50", "q60", "q75", "q90", "q95")))  # Ensure correct legend order
+    mutate(Percentile = factor(Percentile, levels = c("q50", "q60", "q75", "q90", "q95")))  # Ensure correct legend order
   # Plot species richness
   p <- ggplot() +
     geom_point(data = df_bin, aes(x = cell_lat, y = qD_normalized), color = "black", alpha = 0.5) +  # Raw richness data
-    geom_line(data = richness_percentile, aes(x = lat_bin_mid, y = richness, color = percentile, group = percentile), size = 1) +
+    geom_line(data = richness_percentile, aes(x = lat_bin_mid, y = richness, color = Percentile, group = Percentile), size = 1) +
     # scale_color_manual(name = "Percentile", values = percentile_colors) +
     scale_x_continuous(
       limits = c(-90, 90),
       expand = c(0, 0)
     )  +
     labs(title = sprintf("Genus Richness in %s (%s Ma)", stg, bin),
-         x = "Paleolatitude",
+         x = "Palaeolatitude",
          y = "Normalized richness") +
     theme_minimal() +
     theme(

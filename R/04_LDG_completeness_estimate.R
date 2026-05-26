@@ -2,15 +2,15 @@
 # Project: LDG_climate_state
 # File name: 04_LDG_completeness_estimate.R
 # Last updated: 2025-10-15
-# Author: Die (Wendy) Wen
-# Email: geowendywen@outlook.com
-# Repository: https://github.com/wendydie/LDG_climate_state
 # -----------------------------------------------------------------------
 # Load required libraries
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(cowplot)
+library(patchwork)
 source("./R/options.R")
+source("./R/functions/check_hemisphere_good.R")
 # Read the dataset----------------------------------------------------------
 rich_df <- read.csv(sprintf("./results/LDG/%s_cell_%s_richness.csv", 
                             params$spacing, params$level))
@@ -35,22 +35,62 @@ rich_df <- rich_df %>%
   left_join(lat_bins %>% select(bin, lat_bin_mid = mid), by = "bin") %>%
   mutate(abs_lat_bin_mid = abs(lat_bin_mid))  # Midpoints of 12 equal-area latitude bands
 
-#Determine "good" or "bad" using only Complete data
-rich_df_complete <- rich_df %>% 
-  filter(completeness == "Complete")
-rich_df_complete <- has_adjacent_bins (rich_df_complete, lat_bins)
+# -----------------------------------------------------------------------
+# Determine "good" or "bad" using only Complete data
+# Baseline QC: occurrence5_k1_tropical_temperate
+# -----------------------------------------------------------------------
 
-# Merge "good/bad" completeness back into full dataset (including Incomplete)
-rich_df2 <- left_join(rich_df, rich_df_complete %>% select(bin_midpoint, cell, hemisphere, label), 
-                     by = c("bin_midpoint", 'cell', "hemisphere"))
-# Fill NA labels based on bin_midpoint & hemisphere
-rich_df2 <- rich_df2 %>%
+rich_df_complete <- rich_df %>%
+  filter(completeness == "Complete") %>%
+  mutate(
+    lat_zone = case_when(
+      abs_lat_bin_mid < 30 ~ "tropical",
+      abs_lat_bin_mid < 60 ~ "temperate",
+      abs_lat_bin_mid <= 90 ~ "polar",
+      TRUE ~ NA_character_
+    )
+  )
+
+adjacent_df <- has_adjacent_bins(rich_df_complete, lat_bins) %>%
+  distinct(bin_midpoint, hemisphere, label) %>%
+  transmute(
+    bin_midpoint,
+    hemisphere,
+    has_adjacent_tt = label == "good"
+  )
+
+qc_label_df <- rich_df_complete %>%
   group_by(bin_midpoint, hemisphere) %>%
-  mutate(label = ifelse(is.na(label), 
-                        ifelse("good" %in% label, "good", "bad"), 
-                        # If any "good" exists, set all as "good", else "bad"
-                        label)) %>%
-  ungroup()
+  summarise(
+    has_tropical = any(lat_zone == "tropical", na.rm = TRUE),
+    has_temperate = any(lat_zone == "temperate", na.rm = TRUE),
+    n_valid_lat_bins = n_distinct(abs_lat_bin_mid),
+    .groups = "drop"
+  ) %>%
+  left_join(
+    adjacent_df,
+    by = c("bin_midpoint", "hemisphere")
+  ) %>%
+  mutate(
+    has_adjacent_tt = coalesce(has_adjacent_tt, FALSE),
+    label = ifelse(
+      has_tropical & has_temperate & has_adjacent_tt,
+      "good",
+      "bad"
+    )
+  )
+
+# Merge hemisphere-level good/bad labels back into the full dataset
+rich_df2 <- rich_df %>%
+  left_join(
+    qc_label_df %>%
+      select(bin_midpoint, hemisphere, label),
+    by = c("bin_midpoint", "hemisphere")
+  ) %>%
+  mutate(
+    label = ifelse(is.na(label), "bad", label)
+  )
+
 # Reorder completeness so "Complete" is at the bottom
 rich_df2$completeness <- factor(rich_df2$completeness, levels = c("Incomplete", "Complete"))
 # Prepare text annotation data (only for bad hemisphere)
@@ -86,7 +126,7 @@ stacked_bar_plot <- ggplot(rich_df2, aes(x = cell_lat, fill = completeness)) +
   # Equator & Baseline Lines
   geom_vline(xintercept = 0, color = "red", linetype = "solid", linewidth = 1) +  
   # Axis Labels
-  labs(x = "Paleolatitude", y = "Cell number", fill = "Completeness") +
+  labs(x = "Palaeolatitude", y = "Cell number", fill = "Completeness") +
   # Facet by 'stage' (bin_midpoint), sorted in descending order
   facet_wrap(~ reorder(bin_midpoint, -as.numeric(as.character(bin_midpoint))),
              labeller = as_labeller(function(x) 
@@ -122,9 +162,33 @@ stacked_bar_plot <- ggplot(rich_df2, aes(x = cell_lat, fill = completeness)) +
     legend.spacing.y = unit(-3, "pt"),  # Reduce spacing between legend items
     legend.key.height = unit(5, "pt")  # Make legend more compact
   )
+p_main <- stacked_bar_plot + theme(legend.position = "none")
+g_legend <- cowplot::get_legend(
+  stacked_bar_plot + 
+    theme(
+      legend.position = "bottom",
+      legend.title = element_text(size=10),
+      legend.text = element_text(size=8),
+      legend.key = element_rect(fill = NA, color = NA),
+      legend.background = element_rect(fill = NA, color = NA), 
+      legend.box.background = element_rect(fill = NA, color=NA)
+    )
+)
+p_final <- p_main +
+  inset_element(
+    g_legend,
+    left   = 0.63,
+    bottom = 0.04,
+    right  = 0.88,
+    top    = 0.08,
+    on_top = TRUE,
+    clip = FALSE,
+    align_to = "plot"
+  )
+print(p_final)
 
 # Save and display plot
-print(stacked_bar_plot)
+# print(stacked_bar_plot)
 ggsave(sprintf("./figures/%s_km_%s_quota_completeness_histogram.jpg", 
-               params$spacing, params$level), stacked_bar_plot, 
+               params$spacing, params$level), p_final, 
        width = 8, height = 8, dpi = 300)

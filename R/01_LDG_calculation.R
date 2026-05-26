@@ -2,9 +2,6 @@
 # Project: LDG_climate_state
 # File name: 01_LDG_calculation.R
 # Last updated: 2025-10-15
-# Author: Die (Wendy) Wen
-# Email: geowendywen@outlook.com
-# Repository: https://github.com/wendydie/LDG_climate_state
 # -----------------------------------------------------------------------
 # Load libraries and options --------------------------------------------
 library(dplyr)

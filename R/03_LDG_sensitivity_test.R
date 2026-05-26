@@ -2,9 +2,6 @@
 # Project: LDG_climate_state
 # File name: 03_LDG_sensitivity_test.R
 # Last updated: 2025-10-15
-# Author: Die (Wendy) Wen
-# Email: geowendywen@outlook.com
-# Repository: https://github.com/wendydie/LDG_climate_state
 # -----------------------------------------------------------------------
 # Load libraries and options --------------------------------------------
 library(ggplot2)
