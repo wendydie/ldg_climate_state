@@ -1,5 +1,4 @@
-[![DOI](https://zenodo.org/badge/895013248.svg)](https://doi.org/10.5281/zenodo.17631059)
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17700302.svg)](https://doi.org/10.5281/zenodo.17700302)
 
 ### LDG_climate_state
 Latitudinal Diversity Gradient (LDG) analysis workflow for deep-time biodiversity and climate-state reconstruction.
